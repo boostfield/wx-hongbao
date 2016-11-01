@@ -17,6 +17,7 @@ WX_URL_CREATE_MENU = 'https://api.weixin.qq.com/cgi-bin/menu/create'
 WX_URL_OAUTH2 = 'https://open.weixin.qq.com/connect/oauth2/authorize'
 WX_URL_WEB_AUTH_ACCESS_TOKEN = 'https://api.weixin.qq.com/sns/oauth2/access_token'
 WX_URL_MAKE_ORDER = 'https://api.mch.weixin.qq.com/pay/unifiedorder'
+WX_URL_SEND_REDPACK = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/sendredpack'
 WX_URL_GET_JSAPI_TICKET = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket' #?access_token=ACCESS_TOKEN&type=jsapi
 
 _access_token = {
@@ -29,12 +30,12 @@ _jsapi_ticket = {
         'timestamp': 0
         }
 
-def query_str(kw):
+def _query_str(kw):
     querys = ["{}={}".format(key, kw[key]) for key in kw]
     return '&'.join(querys)
 
 def _http_req(url, args={}, data=None):
-    query = query_str(args)
+    query = _query_str(args)
     if query:
         url += '?' + query
 
@@ -53,14 +54,19 @@ def now():
 def randstr():
     return uuid.uuid4().hex
 
-def sha1_sign(s):
+def _sha1_sign(s):
     sha1 = hashlib.sha1()
-    sha1.update(s)
+    sha1.update(s.encode('utf-8'))
     return sha1.hexdigest()
+
+def _md5_sign(s):
+    md5 = hashlib.md5()
+    md5.update(s)
+    return md5.hexdigest()
 
 def _build_jsapi_sign(ticket, noncestr, timestamp, url):
     string = 'jsapi_ticket={}&noncestr={}&timestamp={}&url={}'.format(ticket, noncestr, timestamp, url)
-    return sha1_sign(string)
+    return _sha1_sign(string)
 
 
 def get_access_token():
@@ -88,6 +94,17 @@ def get_jsapi_sign(url):
             'appid': APP_ID
             }
 
+def get_pay_sign(prepay_id):
+    sign_items = {
+            'nonceStr': randstr(),
+            'timeStamp': now(),
+            'package': 'prepay_id=' + prepay_id,
+            'signType': 'MD5',
+            'appId': APP_ID
+            }
+    sign_items['paySign'] = _pay_sign(sign_items)
+    return sign_items
+
 def oauth2_url(redirect_uri):
     params = (
             ('appid', APP_ID),
@@ -104,6 +121,19 @@ def make_order(order):
 def create_menu():
     access_token = get_access_token()
 
+def send_redpack(redpack):
+    result = http_post(WX_URL_SEND_REDPACK, redpack.xml())
+    pass
+
+def _pay_sign(kvs):
+    keys = kvs.keys()
+    keys.sort()
+    signstr = u'&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
+    signstr += '&key=' + API_KEY
+    
+    return _md5_sign(signstr).upper()
+    
+
 class MessageReceived(object):
     def __init__(self, xml):
         self._xml = xml
@@ -114,20 +144,42 @@ class MessageReceived(object):
         if ele is not None:
             return ele.text
 
-class MessageReplied(object):
+class RepliedMessage(object):
     def xml(self):
         root = ET.Element('xml')
         for k, v in self.__dict__.iteritems():
             e = ET.SubElement(root, k)
-            e.text = str(v)
+            if isinstance(v, basestring):
+                e.text = v
+            else:
+                e.text = str(v)
             
-        return ET.tostring(root)
+        return ET.tostring(root, encoding='UTF-8')
 
     def __getattr__(self, key, type=None):
         return self.__dict__.get(key)
-    
-    def __setattr__(self, key, value):
-        self.__dict__[key] = value
+
+
+class SignTraits(object):
+    def sign(self):
+        self.sign = self.signstr()
+
+    def signstr(self, kvs = None):
+        kvs = kvs or self.__dict__
+        keys = kvs.keys()
+        keys.sort()
+        _signstr = '&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
+        _signstr += '&key=' + API_KEY
+        
+        return self._md5_sign(_signstr).upper()
+
+    def _md5_sign(self, s):
+        md5 = hashlib.md5()
+        md5.update(s.encode('utf-8'))
+        return md5.hexdigest()
+
+class RedPack(RepliedMessage, SignTraits):
+    pass
 
 class OrderMessage(object):
     def __init__(self):
@@ -136,28 +188,17 @@ class OrderMessage(object):
 
     def xml(self):
         if self.sign is None:
-            self.sign = self._build_sign()
+            self.sign = _pay_sign(self.__dict__)
 
         root = ET.Element('xml')
         for k, v in self.__dict__.iteritems():
             e = ET.SubElement(root, k)
-            e.text = str(v)
+            if isinstance(v, basestring):
+                e.text = v
+            else:
+                e.text = str(v)
             
         return ET.tostring(root, encoding='UTF-8')
 
-    def _build_sign(self):
-        argstr = self._arg_string()
-        argstr += '&key=' + API_KEY
-        md5 = hashlib.md5()
-        md5.update(argstr)
-        md5str = md5.hexdigest()
-        return md5str.upper()
-
-    # 拼接所有参数以生成签名
-    def _arg_string(self):
-        keys = self.__dict__.keys()
-        keys.sort()
-        return '&'.join(['{}={}'.format(k, self.__dict__[k]) for k in keys])
-        
     def __getattr__(self, key, type=None):
         return self.__dict__.get(key)

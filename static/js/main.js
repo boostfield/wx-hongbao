@@ -43,5 +43,14 @@ function onButtonClick() {
 
     $.post(URLS.requestPay, { money: 1 }, function(ticket) {
         console.log(ticket);
-    });
+        wx.chooseWXPay({
+            timeStamp: ticket.timeStamp,
+            nonceStr: ticket.nonceStr,
+            package: ticket.package,
+            signType: ticket.signType,
+            paySign: ticket.paySign,
+            success: function (res) {
+                console.log(res);
+            });
+    }, 'json');
 }
