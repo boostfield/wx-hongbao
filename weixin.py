@@ -7,11 +7,15 @@ import uuid
 import hashlib
 import time
 
+# == 由外部赋值 ==
+logger = None       
+# ================
+
 #APP_ID = 'wxf7b5161f46d0b191'
 #APP_SECRET = 'b73f9b5da3cc4f7b0e09eb3d148c0447'
 APP_ID = 'wx9fb7ef78c47f8ef2'
 APP_SECRET = '4c7b0db408b0c1b4242337ade30120f1'
-API_KEY = 'get_from_pay.weixin.qq.com'
+API_KEY = 'ac3d073861ac4035b2187549a3d4fd61'
 WX_URL_GET_ACCESS_TOKEN = 'https://api.weixin.qq.com/cgi-bin/token'
 WX_URL_CREATE_MENU = 'https://api.weixin.qq.com/cgi-bin/menu/create'
 WX_URL_OAUTH2 = 'https://open.weixin.qq.com/connect/oauth2/authorize'
@@ -97,7 +101,7 @@ def get_jsapi_sign(url):
 def get_pay_sign(prepay_id):
     sign_items = {
             'nonceStr': randstr(),
-            'timeStamp': now(),
+            'timeStamp': str(now()),
             'package': 'prepay_id=' + prepay_id,
             'signType': 'MD5',
             'appId': APP_ID
@@ -116,20 +120,22 @@ def oauth2_url(redirect_uri):
     return '{}?{}#wechat_redirect'.format(WX_URL_OAUTH2, urllib.urlencode(params))
 
 def make_order(order):
-    return http_post(WX_URL_MAKE_ORDER, order.xml())
+    result = http_post(WX_URL_MAKE_ORDER, order.xml())
+    return MessageReceived(result)
 
 def create_menu():
     access_token = get_access_token()
 
 def send_redpack(redpack):
     result = http_post(WX_URL_SEND_REDPACK, redpack.xml())
-    pass
+    return
 
 def _pay_sign(kvs):
     keys = kvs.keys()
     keys.sort()
-    signstr = u'&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
+    signstr = '&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
     signstr += '&key=' + API_KEY
+    logger.info(signstr)
     
     return _md5_sign(signstr).upper()
     
@@ -143,6 +149,8 @@ class MessageReceived(object):
         ele = self._root.find(key)
         if ele is not None:
             return ele.text
+    def xml(self):
+        return self._xml
 
 class RepliedMessage(object):
     def xml(self):
@@ -160,7 +168,7 @@ class RepliedMessage(object):
         return self.__dict__.get(key)
 
 
-class SignTraits(object):
+class Signer(object):
     def sign(self):
         self.sign = self.signstr()
 
@@ -170,6 +178,7 @@ class SignTraits(object):
         keys.sort()
         _signstr = '&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
         _signstr += '&key=' + API_KEY
+        logger.info(_signstr)
         
         return self._md5_sign(_signstr).upper()
 
@@ -178,27 +187,8 @@ class SignTraits(object):
         md5.update(s.encode('utf-8'))
         return md5.hexdigest()
 
-class RedPack(RepliedMessage, SignTraits):
+class RedPack(RepliedMessage, Signer):
     pass
 
-class OrderMessage(object):
-    def __init__(self):
-        self.appid = APP_ID 
-        self.nonce_str = randstr()
-
-    def xml(self):
-        if self.sign is None:
-            self.sign = _pay_sign(self.__dict__)
-
-        root = ET.Element('xml')
-        for k, v in self.__dict__.iteritems():
-            e = ET.SubElement(root, k)
-            if isinstance(v, basestring):
-                e.text = v
-            else:
-                e.text = str(v)
-            
-        return ET.tostring(root, encoding='UTF-8')
-
-    def __getattr__(self, key, type=None):
-        return self.__dict__.get(key)
+class OrderMessage(RepliedMessage, Signer):
+    pass
