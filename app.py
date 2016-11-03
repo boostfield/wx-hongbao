@@ -1,5 +1,4 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
+#! /usr/bin/env python3
 from __future__ import print_function
 import os
 import time
@@ -10,9 +9,6 @@ import json
 import uuid
 from flask import Flask, request, redirect, session, g
 import service
-import weixin
-from weixin import MessageReceived
-from weixin import OrderMessage
 
 app = Flask(__name__)
 app.config.from_pyfile('conf/config.py')
@@ -22,7 +18,12 @@ handler = FileHandler(app.config['LOG_FILE'])
 handler.setFormatter(Formatter(app.config['LOG_FORMAT']))
 app.logger.addHandler(handler)
 app.logger.setLevel(app.config['LOG_LEVEL'])
+
+import weixin
+from weixin import MessageReceived, RepliedMessage, OrderMessage
 weixin.logger = app.logger
+weixin.ssl_cert_file = app.config['WEIXIN_SSL_CERT_FILE']
+weixin.ssl_key_file = app.config['WEIXIN_SSL_KEY_FILE']
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
@@ -99,11 +100,9 @@ def callback():
 # 用户在网页端授权后回调至此位置
 @app.route('/auth/redirect')
 def auth_redirect():
-    app.logger.info(request.args)
     openid = session.get('openid')
     if openid is None:
         access_token = weixin.get_web_auth_access_token(request.args.get('code'))
-        app.logger.info(access_token)
         openid = access_token['openid']
 
     # 记录用户登录信息
@@ -138,8 +137,6 @@ def get_jsapi_sign():
 # DOC: https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=9_7
 @app.route('/pay/notify', methods=['POST'])
 def process_pay_result():
-    app.logger.info('pay notified: %s', request.data)
-
     pay_result = MessageReceived(request.data)
     if pay_result.return_code == 'SUCCESS':
         redpack = weixin.RedPack()
@@ -149,17 +146,18 @@ def process_pay_result():
         redpack.wxappid = app.config['APP_ID']
         redpack.send_name = app.config['MCH_NAME']
         redpack.re_openid = pay_result.openid
-        redpack.total_amount = 1000
+        redpack.total_amount = 100
         redpack.total_num = 1
-        redpack.wishing = 'hello bitch'
+        redpack.wishing = app.config['REDPACK_WISHING']
         redpack.client_ip = app.config['LOCAL_IP']
         redpack.act_name = app.config['REDPACK_ACTIVE_NAME']
         redpack.remark = app.config['REDPACK_REMARK']
         redpack.sign()
 
-        weixin.send_redpack(redpack)
+        result = weixin.send_redpack(redpack)
         xml = redpack.xml()
-        return xml
+        app.logger.info(xml)
+        app.logger.info(result)
 
     reply = RepliedMessage()
     reply.return_code = 'SUCCESS'
@@ -184,9 +182,6 @@ def receive_tax():
     order.trade_type = 'JSAPI'
     order.openid = openid
     order.sign()
-    
-    app.logger.info(order.xml())
-
     result = weixin.make_order(order)
     if result.return_code == 'FAIL':
         return { 'return_code': 'FAIL' }
@@ -194,7 +189,6 @@ def receive_tax():
     # todo: save pay info to db
     app.logger.info(result.xml())
     pay_sign = weixin.get_pay_sign(result.prepay_id)
-    app.logger.warning(pay_sign)
     return json.dumps(pay_sign)
 
 if __name__ == '__main__':

@@ -1,21 +1,20 @@
-# -*- encoding: utf-8 -*-
-
 import xml.etree.ElementTree as ET
-import urllib
+import urllib.request
 import json
 import uuid
 import hashlib
 import time
+import ssl
 
 # == 由外部赋值 ==
 logger = None       
-# ================
-
-#APP_ID = 'wxf7b5161f46d0b191'
-#APP_SECRET = 'b73f9b5da3cc4f7b0e09eb3d148c0447'
+ssl_cert_file = None
+ssl_key_file = None
 APP_ID = 'wx9fb7ef78c47f8ef2'
 APP_SECRET = '4c7b0db408b0c1b4242337ade30120f1'
 API_KEY = 'ac3d073861ac4035b2187549a3d4fd61'
+# ================
+
 WX_URL_GET_ACCESS_TOKEN = 'https://api.weixin.qq.com/cgi-bin/token'
 WX_URL_CREATE_MENU = 'https://api.weixin.qq.com/cgi-bin/menu/create'
 WX_URL_OAUTH2 = 'https://open.weixin.qq.com/connect/oauth2/authorize'
@@ -23,7 +22,6 @@ WX_URL_WEB_AUTH_ACCESS_TOKEN = 'https://api.weixin.qq.com/sns/oauth2/access_toke
 WX_URL_MAKE_ORDER = 'https://api.mch.weixin.qq.com/pay/unifiedorder'
 WX_URL_SEND_REDPACK = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/sendredpack'
 WX_URL_GET_JSAPI_TICKET = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket' #?access_token=ACCESS_TOKEN&type=jsapi
-
 _access_token = {
         'token': None,
         'timestamp': 0
@@ -43,7 +41,7 @@ def _http_req(url, args={}, data=None):
     if query:
         url += '?' + query
 
-    rsp = urllib.urlopen(url, data)
+    rsp = urllib.request.urlopen(url, data)
     return rsp.read().decode('utf-8')
 
 def http_get(url, **kws):
@@ -51,6 +49,12 @@ def http_get(url, **kws):
 
 def http_post(url, data, **kws):
     return _http_req(url, kws, data)
+
+def ssl_http_post(url, data):
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+    context.load_cert_chain(ssl_cert_file, ssl_key_file)
+    rsp = urllib.request.urlopen(url, data, context=context)
+    return rsp.read().decode('utf-8')
 
 def now():
     return int(time.time()) 
@@ -65,7 +69,7 @@ def _sha1_sign(s):
 
 def _md5_sign(s):
     md5 = hashlib.md5()
-    md5.update(s)
+    md5.update(s.encode('utf-8'))
     return md5.hexdigest()
 
 def _build_jsapi_sign(ticket, noncestr, timestamp, url):
@@ -117,7 +121,7 @@ def oauth2_url(redirect_uri):
             ('scope', 'snsapi_base'),
             ('state', 'STATE')
             )
-    return '{}?{}#wechat_redirect'.format(WX_URL_OAUTH2, urllib.urlencode(params))
+    return '{}?{}#wechat_redirect'.format(WX_URL_OAUTH2, urllib.parse.urlencode(params))
 
 def make_order(order):
     result = http_post(WX_URL_MAKE_ORDER, order.xml())
@@ -127,11 +131,11 @@ def create_menu():
     access_token = get_access_token()
 
 def send_redpack(redpack):
-    result = http_post(WX_URL_SEND_REDPACK, redpack.xml())
-    return
+    result = ssl_http_post(WX_URL_SEND_REDPACK, redpack.xml())
+    return result
 
 def _pay_sign(kvs):
-    keys = kvs.keys()
+    keys = list(kvs.keys())
     keys.sort()
     signstr = '&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
     signstr += '&key=' + API_KEY
@@ -149,18 +153,16 @@ class MessageReceived(object):
         ele = self._root.find(key)
         if ele is not None:
             return ele.text
+
     def xml(self):
         return self._xml
 
 class RepliedMessage(object):
     def xml(self):
         root = ET.Element('xml')
-        for k, v in self.__dict__.iteritems():
+        for k, v in self.__dict__.items():
             e = ET.SubElement(root, k)
-            if isinstance(v, basestring):
-                e.text = v
-            else:
-                e.text = str(v)
+            e.text = str(v)
             
         return ET.tostring(root, encoding='UTF-8')
 
@@ -174,7 +176,7 @@ class Signer(object):
 
     def signstr(self, kvs = None):
         kvs = kvs or self.__dict__
-        keys = kvs.keys()
+        keys = list(kvs.keys())
         keys.sort()
         _signstr = '&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
         _signstr += '&key=' + API_KEY

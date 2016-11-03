@@ -32,7 +32,6 @@ function onPageLoaded() {
 }
 
 function onButtonClick() {
-    alert('test click');
     $.post(URLS.requestPay, { money: 1 }, function(ticket) {
         wx.chooseWXPay({
             timestamp: ticket.timeStamp,
@@ -40,9 +39,6 @@ function onButtonClick() {
             package: ticket.package,
             signType: ticket.signType,
             paySign: ticket.paySign,
-            success: function(res) {
-                debug('success');
-            },
             error: function(err) {
                 debug('error');
             }
@@ -52,29 +48,4 @@ function onButtonClick() {
 
 function onCheckButtonClick() {
     alert('check');
-}
-
-function pay() {
-    debug('abc');
-    alert('wx');
-    /*
-    $.post(URLS.requestPay, { money: 1 }, function(ticket) {
-        WeixinJSBridge.invoke(
-            'getBrandWCPayRequest', 
-            {
-                "appId": "wx2421b1c4370ec43b",
-            "timeStamp": "1395712654", 
-            "nonceStr": "e61463f8efa94090b1f366cccfbbb444", //随机串     
-            "package": "prepay_id=u802345jgfjsdfgsdg888",     
-            "signType": "MD5",         //微信签名方式：     
-            "paySign": "70EA570631E4BB79628FBCA90534C63FF7FADD89" //微信签名 
-            },
-            function(res){     
-                if (res.err_msg == "get_brand_wcpay_request:ok" ) {
-                    alert('fuck wx');
-                }     // 
-            }
-        ); 
-    });
-    */
 }

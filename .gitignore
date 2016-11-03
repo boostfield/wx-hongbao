@@ -1,2 +1,6 @@
 *.pyc
+*.db
+*.pem
+log/
+test.py
 MP_verify_O6UrgEPBKJpwBg64.txt
