@@ -139,7 +139,6 @@ def _pay_sign(kvs):
     keys.sort()
     signstr = '&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
     signstr += '&key=' + API_KEY
-    logger.info(signstr)
     
     return _md5_sign(signstr).upper()
     
@@ -180,7 +179,6 @@ class Signer(object):
         keys.sort()
         _signstr = '&'.join([u'{}={}'.format(k, kvs[k]) for k in keys])    # 拼接所有参数以生成签名
         _signstr += '&key=' + API_KEY
-        logger.info(_signstr)
         
         return self._md5_sign(_signstr).upper()
 

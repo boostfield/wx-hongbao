@@ -1,4 +1,6 @@
 import sys
+import os
 
-sys.path.append('/var/www/wx-test')
-from app import app as application
+cdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(cdir)
+from main import app as application
