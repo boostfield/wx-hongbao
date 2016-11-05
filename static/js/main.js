@@ -35,7 +35,7 @@ function onButtonClick() {
 	$.ajax({
 		url:URLS.requestPay,
 		type: 'POST',
-		data: JSON.stringify({ money: 1 }),
+		data: JSON.stringify({ money: 100 }),
 		contentType: 'application/json; charset=utf-8',
 		dataType: 'json',
 		success: function(ticket) {

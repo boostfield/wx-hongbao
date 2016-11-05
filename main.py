@@ -8,12 +8,13 @@ import json
 import uuid
 from flask import Flask, request, redirect, session, g, abort
 import service
+import restitution_counter
 
 app = Flask(__name__)
 app.config.from_pyfile('conf/config.py')
 app.config['CWD'] = os.path.dirname(__file__)
 
-handler = FileHandler(app.config['LOG_FILE'])
+handler = FileHandler(app.config['CWD'] + '/' + app.config['LOG_FILE'])
 handler.setFormatter(Formatter(app.config['LOG_FORMAT']))
 app.logger.addHandler(handler)
 app.logger.setLevel(app.config['LOG_LEVEL'])
@@ -25,7 +26,7 @@ weixin.ssl_cert_file = app.config['WEIXIN_SSL_CERT_FILE']
 weixin.ssl_key_file = app.config['WEIXIN_SSL_KEY_FILE']
 
 def connect_db():
-    return sqlite3.connect(app.config['DATABASE'])
+    return sqlite3.connect(app.config['CWD'] + '/' + app.config['DATABASE'])
 
 def init_db():
     with connect_db() as db:
@@ -108,6 +109,7 @@ def auth_redirect():
     openid = session.get('openid')
     if openid is None:
         access_token = weixin.get_web_auth_access_token(request.args.get('code'))
+        app.logger.info(access_token)
         openid = access_token['openid']
 
     # 记录用户登录信息
@@ -153,8 +155,11 @@ def _build_order(openid, money, remote_addr):
     order.sign()
     return order
 
+
 def _decide_repack_money(openid):
-    return 100
+    strategy = app.config['RESTITUTION_STRATEGY']
+    history = service.find_user_bill(openid)
+    return restitution_counter.count(strategy, history)
 
 def _send_redpack(openid, user_pay_id):
     money = _decide_repack_money(openid)
@@ -176,7 +181,7 @@ def _send_redpack(openid, user_pay_id):
     result = weixin.send_redpack(redpack)
     result = MessageReceived(result)
 
-    sys_pay = dict(openid=openid, money=money, billno=redpack.mch_billno, user_pay_id, state='SENDED')
+    sys_pay = dict(openid=openid, money=money, billno=redpack.mch_billno, user_pay_id=user_pay_id, state='SENDED')
     service.save_sys_pay(sys_pay)
 
     # todo: 给用户发红包失败后应有应对措施
@@ -185,7 +190,7 @@ def _send_redpack(openid, user_pay_id):
                            openid, redpack.mch_billno, result.return_msg)
         sys_pay['state'] = FAIL
         sys_pay['error_msg'] = result.return_msg
-        service.save_sys_pay(sys_pay)
+        service.update_sys_pay(sys_pay)
         return
 
     if result.result_code == FAIL:
@@ -193,13 +198,13 @@ def _send_redpack(openid, user_pay_id):
                            openid, redpack.mch_billno, result.err_code, result.err_code_des)
         sys_pay['state'] = FAIL
         sys_pay['error_msg'] = '{}-{}'.format(result.err_code, result.err_code_des)
-        service.save_sys_pay(sys_pay)
+        service.update_sys_pay(sys_pay)
         return
 
     app.logger.info('send redpack to user: %s success, billno: %s', openid, redpack.mch_billno)
     sys_pay['state'] = SUCCESS
     sys_pay['wx_billno'] = result.send_listid
-    service.save_sys_pay(sys_pay)
+    service.update_sys_pay(sys_pay)
     
 # DOC: https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=9_7
 @app.route('/pay/notify', methods=['POST'])

@@ -54,8 +54,19 @@ def update_user_pay(pay):
     db.execute('UPDATE user_pay SET openid=?, money=?, trade_no=?, ip=?, state=?, prepay_id=?, error_msg=? WHERE id=?', args)
     db.commit()
 
+def update_sys_pay(pay):
+    args = (pay['openid'], pay['money'], pay['user_pay_id'], pay['state'], pay.get('wx_billno'),
+            pay.get('error_msg'), pay['billno'])
+    db.execute('UPDATE sys_pay SET openid=?, money=?, user_pay_id=?, state=?, wx_billno=?, error_msg=? WHERE billno=?', args)
+
 def save_sys_pay(pay):
     args = (pay['openid'], pay['money'], pay['billno'], pay['user_pay_id'],
             pay['state'], pay.get('wx_billno'), pay.get('error_msg'))
     db.execute('INSERT INTO sys_pay(openid, money, billno, user_pay_id, state, wx_billno, error_msg) VALUES(?, ?, ?, ?, ?, ?, ?)', args)
     db.commit()
+
+# 查找用户历史收入与支出
+def find_user_bill(openid):
+    args = (openid, )
+    c = db.execute('SELECT up.money, sp.money FROM user_pay AS up LEFT JOIN sys_pay AS sp ON up.id=sp.user_pay_id WHERE up.openid=?', args)
+    return c.fetchall()

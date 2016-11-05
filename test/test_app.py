@@ -1,12 +1,10 @@
 #! /usr/bin/env python3
 
-import sys
 import os
+import base
 import unittest
 import tempfile
 import json
-cdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(cdir, '..'))
 import main
 import service
 
@@ -82,8 +80,32 @@ class TestCase(unittest.TestCase):
         self.assertEqual(pay['trade_no'], saved_pay['trade_no'])
         self.assertEqual(FAIL, saved_pay['state'])
         
-        #args = (pay['openid'], pay['money'], pay['trade_no'], pay['ip'], pay['state'], pay.get('prepay_id'), pay.get('error_msg'))
+    def test_find_user_all_bill(self):
+        bill = service.find_user_bill(OPENID)
+        self.assertEqual([], bill)
 
+        user_pay = dict(openid=OPENID, money=1, trade_no='no1', ip='0.0.0.0', state='OK')
+        service.save_user_pay(user_pay)
+
+        bill = service.find_user_bill(OPENID)
+        self.assertEqual([(1, None)], bill)
+
+        user_pay = dict(openid=OPENID, money=2, trade_no='no2', ip='0.0.0.0', state='OK')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid=OPENID, money=3, trade_no='no3', ip='0.0.0.0', state='OK')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid=OPENID, money=4, trade_no='no4', ip='0.0.0.0', state='OK')
+        service.save_user_pay(user_pay)
+
+        sys_pay = dict(openid=OPENID, money=1, billno='bill1', user_pay_id=1, state='OK')
+        service.save_sys_pay(sys_pay)
+        sys_pay = dict(openid=OPENID, money=2, billno='bill2', user_pay_id=2, state='OK')
+        service.save_sys_pay(sys_pay)
+        sys_pay = dict(openid=OPENID, money=3, billno='bill3', user_pay_id=3, state='OK')
+        service.save_sys_pay(sys_pay)
+
+        bill = service.find_user_bill(OPENID)
+        self.assertEqual([(1, 1), (2, 2), (3, 3), (4, None)], bill)
 
 if __name__ == '__main__':
     unittest.main()
