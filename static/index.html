@@ -12,14 +12,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta http-equiv="pragma" content="no-cache">
     <meta http-equiv="cache-control" content="no-cache">
-    <meta http-equiv="expires" content="0">  
+    <meta http-equiv="expires" content="0">
     <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
     <script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
+	<link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 
 <body onload="onPageLoaded()">
-<button type="button" onclick="onButtonClick()">上缴智商税</button>
+  <div id="bg-img-container" >
+	<!-- <img id="bg-img" src="images/background.jpg" /> -->
+	<button id="btn-pay" type="button" onclick="onButtonClick()">抽奖</button>
+  </div>  
 </body>
 
 </html>

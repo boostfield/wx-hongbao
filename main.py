@@ -12,7 +12,7 @@ import restitution_counter
 
 app = Flask(__name__)
 app.config.from_pyfile('conf/config.py')
-app.config['CWD'] = os.path.dirname(__file__)
+app.config['CWD'] = os.path.dirname(os.path.abspath(__file__))
 
 handler = FileHandler(app.config['CWD'] + '/' + app.config['LOG_FILE'])
 handler.setFormatter(Formatter(app.config['LOG_FORMAT']))
@@ -305,3 +305,6 @@ def test(func):
     if func == 'logout':
         del session['openid']
     return 'ok'
+
+if __name__ == '__main__':
+    app.run('0.0.0.0', debug=True)
