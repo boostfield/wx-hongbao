@@ -1,0 +1,33 @@
+body {
+	margin: 0px;
+	font-family: "Microsoft YaHei";
+}
+#bg-img-container {
+	position: relative;
+	width: 100%;
+	height: 100vh;
+	background-image: url(images/background.jpg);
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: center
+}
+
+#bg-img {
+	height: 100%;
+	width: 100%;
+}
+
+#btn-pay {
+	position: absolute;
+	width: 80%;
+	height: 40px;
+	background: yellow;
+	left: 50%;
+	bottom: 35%;
+	border: none;
+	outline: none;
+	transform: translateX(-50%);
+	font-size: 18px;
+	color: red;
+	font-family: "Microsoft YaHei";
+}
