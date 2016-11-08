@@ -1,8 +1,13 @@
 __TABLE_COLUMNS = {
-    'user': ('id', 'openid', 'register_time'),
+    'user': ('id', 'openid', 'agent', 'register_time'),
     'login': ('id', 'openid', 'timestamp'),
-    'user_pay': ('id', 'openid', 'money', 'trade_no', 'ip', 'state', 'prepay_id', 'error_msg', 'timestamp')
+    'user_pay': ('id', 'openid', 'money', 'trade_no', 'ip', 'state', 'prepay_id', 'error_msg', 'timestamp'),
+    'event': ('id', 'openid', 'type', 'info', 'timestamp'),
     }
+
+# row to dict
+def _inflate(tablename, row):
+    return dict(zip(__TABLE_COLUMNS[tablename], row))
 
 def find_user(openid):
     args = (openid,)
@@ -10,11 +15,11 @@ def find_user(openid):
     row = c.fetchone()
     if row is None:
         return None
-    return dict(zip(__TABLE_COLUMNS['user'], row))
+    return _inflate('user', row)
 
-def create_user(user):
-    args = (user['openid'], )
-    db.execute('INSERT INTO user(openid) VALUES(?)', args)
+def create_user(openid, agent=None):
+    args = (openid, agent)
+    db.execute('INSERT INTO user(openid, agent) VALUES(?, ?)', args)
     db.commit()
 
 def record_login(openid):
@@ -38,14 +43,14 @@ def find_user_pays(openid, state=None):
         c = db.execute("SELECT * FROM user_pay WHERE openid=? AND state='?' ORDER BY timestamp DESC", args)
 
     pays = c.fetchall()
-    return list(map(lambda pay: dict(zip((__TABLE_COLUMNS['user_pay']), pay)), pays))
+    return list(map(lambda pay: _inflate('user_pay', pay), pays))
 
 def find_user_pay(trade_no):
     args = (trade_no, )
     c = db.execute('SELECT * FROM user_pay WHERE trade_no=?', args)
     row = c.fetchone()
     if row:
-        row = dict(zip(__TABLE_COLUMNS['user_pay'], row))
+        row = _inflate('user_pay', row)
     return row
 
 def update_user_pay(pay):
@@ -70,3 +75,14 @@ def find_user_bill(openid):
     args = (openid, )
     c = db.execute('SELECT up.money, sp.money FROM user_pay AS up LEFT JOIN sys_pay AS sp ON up.id=sp.user_pay_id WHERE up.openid=?', args)
     return c.fetchall()
+
+
+def save_event(openid, event, info=None):
+    args = (openid, event, info)
+    db.execute('INSERT INTO event(openid, type, info) VALUES(?, ?, ?)', args)
+    db.commit()
+
+def find_events(openid, event):
+    args = (openid, event)
+    c = db.execute('SELECT * FROM event WHERE openid=? AND type=? ORDER BY timestamp DESC', args)
+    return list(map(lambda event: _inflate('event', event), c.fetchall()))

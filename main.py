@@ -1,3 +1,4 @@
+
 from __future__ import print_function
 import os
 import time
@@ -20,10 +21,13 @@ app.logger.addHandler(handler)
 app.logger.setLevel(app.config['LOG_LEVEL'])
 
 import weixin
-from weixin import MessageReceived, RepliedMessage, OrderMessage
+from weixin import Message
 weixin.logger = app.logger
 weixin.ssl_cert_file = app.config['WEIXIN_SSL_CERT_FILE']
 weixin.ssl_key_file = app.config['WEIXIN_SSL_KEY_FILE']
+weixin.APP_ID = app.config['APP_ID']
+weixin.APP_SECRET = app.config['APP_SECRET']
+weixin.API_KEY = app.config['API_KEY']
 
 def connect_db():
     return sqlite3.connect(app.config['CWD'] + '/' + app.config['DATABASE'])
@@ -67,12 +71,14 @@ FAIL = 'FAIL'
 
 @app.before_request
 def before_request():
-    g.db = connect_db()
-    service.db = g.db
+    if not app.config['TESTING']:
+        g.db = connect_db()
+        service.db = g.db
 
 @app.after_request
 def after_request(response):
-    g.db.close()
+    if not app.config['TESTING']:
+        g.db.close()
     return response
 
 @app.route('/')
@@ -89,11 +95,58 @@ def wx_debug_helper():
 def auth():
     return request.args.get('echostr')
 
+def _get_agent(eventkey):
+    content = eventkey[len('qrscene_'):]
+    return int(content)
 
+def _handle_subscribe(msg):
+    user = service.find_user(msg.FromUserName)
+
+    if 'EventKey' in msg:
+        # 分销关注
+        if user is None:
+            agent = _get_agent(msg.EventKey)
+            app.logger.info('user: %s subscribe app follow by agent: %d', msg.FromUserName, agent)
+            service.create_user(msg.FromUserName, agent)
+            service.save_event(msg.FromUserName, 'follow', agent)
+        else:
+            app.logger.info('user: %s subscribe app follow by agent: %d, but has registered', msg.FromUserName, agent)
+            service.save_event(msg.FromUserName, 'refollow', agent)
+    else:
+        # 主动关注
+        if user is None:
+            app.logger.info('new user: %s subscribe app, register', msg.FromUserName)
+            service.create_user(msg.FromUserName)
+        else:
+            app.logger.info('user: %s subscribe app', msg.FromUserName)
+        service.save_event(msg.FromUserName, 'subscribe')
+
+    session['openid'] = msg.FromUserName
+    return SUCCESS
+            
+def _handle_unsubscribe(msg):
+    app.logger.info('user %s unsubscribe app', msg.FromUserName)
+    service.save_event(msg.FromUserName, msg.Event)
+    return SUCCESS
+
+def _handle_scan(msg):
+    agent = _get_agent(msg.EventKey)
+    app.logger.info('user %s scan qrcode own by user: %d', msg.FromUserName)
+    service.save_event(msg.FromUserName, msg.Event, agent)
+    return SUCCESS
+    
 @app.route('/callback', methods=['POST'])
 def callback():
-    recv_msg = MessageReceived(request.data)
-    reply_msg = weixin.RepliedMessage()
+    msg = Message(request.data)
+    if msg.MsgType == 'event':
+        if msg.Event == 'subscribe':
+            return _handle_subscribe(msg)
+        if msg.Event == 'unsubscribe':
+            return _handle_unsubscribe(msg)
+        if msg.Event == 'SCAN':
+            return _handle_scan(msg)
+        
+    reply_msg = weixin.Message()
 
     reply_msg.ToUserName = recv_msg.FromUserName
     reply_msg.FromUserName = recv_msg.ToUserName
@@ -102,6 +155,18 @@ def callback():
     reply_msg.Content = weixin_oauth2_url()
 
     return reply_msg.xml()
+
+@app.route('/share/qrcode')
+def get_user_share_qrcode():
+    openid = session.get('openid')
+    if not openid:
+        return redirect(weixin_oauth2_url())
+
+    user = service.find_user(openid)
+    rsp = dict(ret=SUCCESS, msg='ok')
+    rsp['ticket'] = weixin.get_unlimit_qrcode_ticket(user['id'])
+    
+    return json.dumps(rsp)
 
 # 用户在网页端授权后回调至此位置
 @app.route('/auth/redirect')
@@ -115,7 +180,7 @@ def auth_redirect():
     # 记录用户登录信息
     user = service.find_user(openid)
     if user is None:
-        service.create_user({ 'openid': openid })
+        service.create_user(openid)
         app.logger.info('register a new user, openid: %s', openid)
     service.record_login(openid)
     app.logger.info('user: %s logined', openid)
@@ -141,7 +206,7 @@ def get_jsapi_sign():
     return json.dumps(weixin.get_jsapi_sign(url))
 
 def _build_order(openid, money, remote_addr):
-    order = OrderMessage()
+    order = Message()
     order.appid = app.config['APP_ID']
     order.nonce_str = randstr()
     order.mch_id = app.config['MCH_ID']
@@ -179,7 +244,7 @@ def _send_redpack(openid, user_pay_id):
     redpack.sign()
     # FIXME: 若在发出红包之后，向微信确认之前出现异常，微信会重复发送此事件，导致重复给用户发红包
     result = weixin.send_redpack(redpack)
-    result = MessageReceived(result)
+    result = Message(result)
 
     sys_pay = dict(openid=openid, money=money, billno=redpack.mch_billno, user_pay_id=user_pay_id, state='SENDED')
     service.save_sys_pay(sys_pay)
@@ -209,10 +274,10 @@ def _send_redpack(openid, user_pay_id):
 # DOC: https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=9_7
 @app.route('/pay/notify', methods=['POST'])
 def process_pay_result():
-    reply = RepliedMessage()
-    reply.return_code = 'SUCCESS'
+    reply = Message()
+    reply.return_code = SUCCESS
     reply.return_msg = 'OK'
-    result = MessageReceived(request.data)
+    result = Message(request.data)
 
     if result.return_code == FAIL:
         app.logger.warning('communication error while pay notify, reason: %s', result.return_msg)
@@ -304,6 +369,9 @@ def test(func):
 
     if func == 'logout':
         del session['openid']
+
+    if func == 'session':
+        return json.dumps(dict(session))
     return 'ok'
 
 if __name__ == '__main__':

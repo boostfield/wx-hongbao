@@ -7,6 +7,7 @@ import tempfile
 import json
 import main
 import service
+import weixin
 
 FAIL = 'FAIL'
 SUCCESS = 'SUCCESS'
@@ -14,22 +15,25 @@ OPENID = 'oenW2wz47W1RisML5QijHzwRz34M'
 
 class TestCase(unittest.TestCase):
     def setUp(self):
-        self.db_fd, main.app.config['DATABASE'] = tempfile.mkstemp()
         main.app.config['TESTING'] = True
-        main.init_db()
         main.app.logger.setLevel('DEBUG')
         self.app = main.app.test_client()
+        main.init_db()
         service.db = main.connect_db()
 
     def tearDown(self):
-        os.close(self.db_fd)
-        os.unlink(main.app.config['DATABASE'])
+        service.db.close()
+        pass
 
     def login(self, openid):
         self.app.post('/test/login?openid={}'.format(openid))
 
     def logout(self):
         self.app.post('/test/logout')
+
+    def getsession(self):
+        rsp = self.app.post('/test/session')
+        return json.loads(rsp.data.decode('utf-8'))
 
     def test_pay_not_login(self):
         rsp = self.app.post('/pay')
@@ -50,16 +54,14 @@ class TestCase(unittest.TestCase):
         rsp = self.app.post('/pay', data='{"money": 10}', environ_base={'REMOTE_ADDR':'127.0.0.1'})
         rsp = main.get_json_object(rsp)
         self.assertEqual(SUCCESS, rsp['ret'])
-        with main.connect_db() as db:
-            service.db = db
-            pay = service.find_user_pays(OPENID)[0]
-            self.assertEqual(10, pay['money'])
-            self.assertEqual(OPENID, pay['openid'])
-            self.assertEqual('PREPAY', pay['state'])
+        pay = service.find_user_pays(OPENID)[0]
+        self.assertEqual(10, pay['money'])
+        self.assertEqual(OPENID, pay['openid'])
+        self.assertEqual('PREPAY', pay['state'])
 
     def test_create_user(self):
         openid = '123456'
-        service.create_user({ 'openid': openid })
+        service.create_user(openid)
         user = service.find_user(openid)
         self.assertEqual(openid, user['openid'])
 
@@ -106,6 +108,61 @@ class TestCase(unittest.TestCase):
 
         bill = service.find_user_bill(OPENID)
         self.assertEqual([(1, 1), (2, 2), (3, 3), (4, None)], bill)
+
+    # 用户未注册时自主订阅
+    def test_user_subscribe(self):
+        msg = weixin.Message()
+        msg.ToUserName = 'server'
+        msg.FromUserName = OPENID
+        msg.CreateTime = weixin.now()
+        msg.MsgType = 'event'
+        msg.Event = 'subscribe'
+
+        self.assertEqual({}, self.getsession())
+        rsp = self.app.post('/callback', data=msg.xml())
+        self.assertEqual(SUCCESS, rsp.data.decode('utf-8'))
+
+        user = service.find_user(OPENID)
+        self.assertEqual(OPENID, user['openid'])
+        self.assertEqual({'openid': OPENID}, self.getsession())
+
+        event = service.find_events(OPENID, 'subscribe')[0]
+        self.assertEqual(OPENID, event['openid'])
+        self.assertEqual('subscribe', event['type'])
+        
+    # 用户未注册时分销订阅
+    def test_user_follow_subscribe(self):
+        msg = weixin.Message()
+        msg.ToUserName = 'server'
+        msg.FromUserName = OPENID
+        msg.CreateTime = weixin.now()
+        msg.MsgType = 'event'
+        msg.Event = 'subscribe'
+        msg.EventKey = 'qrscene_2'
+
+        self.assertEqual({}, self.getsession())
+        rsp = self.app.post('/callback', data=msg.xml())
+        self.assertEqual(SUCCESS, rsp.data.decode('utf-8'))
+
+        user = service.find_user(OPENID)
+        self.assertEqual(OPENID, user['openid'])
+        self.assertEqual(2, user['agent'])
+        self.assertEqual({'openid': OPENID}, self.getsession())
+
+        event = service.find_events(OPENID, 'follow')[0]
+        self.assertEqual(OPENID, event['openid'])
+        self.assertEqual('follow', event['type'])
+        self.assertEqual('2', event['info'])
+        
+        
+    def test_get_share_qrcode(self):
+        service.create_user(OPENID)
+        self.login(OPENID)
+        rsp = self.app.get('/share/qrcode')
+        rsp = json.loads(rsp.data.decode('utf-8'))
+        self.assertEqual(SUCCESS, rsp['ret'])
+        self.assertIn('ticket', rsp)
+
 
 if __name__ == '__main__':
     unittest.main()
