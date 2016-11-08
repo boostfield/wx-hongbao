@@ -23,6 +23,8 @@ WX_URL_MAKE_ORDER = 'https://api.mch.weixin.qq.com/pay/unifiedorder'
 WX_URL_SEND_REDPACK = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/sendredpack'
 WX_URL_GET_JSAPI_TICKET = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket' #?access_token=ACCESS_TOKEN&type=jsapi
 WX_URL_GET_QRCODE = 'https://api.weixin.qq.com/cgi-bin/qrcode/create'
+WX_URL_SHORTURL = 'https://api.weixin.qq.com/cgi-bin/shorturl'
+
 _access_token = {
         'token': None,
         'timestamp': 0
@@ -171,8 +173,11 @@ def make_order(order):
     result = HTTP.post(WX_URL_MAKE_ORDER, order.xml())
     return Message(result)
 
-def create_menu():
-    access_token = get_access_token()
+def create_menu(menu):
+    logger.info(json.dumps(menu))
+    rsp = HTTP.post(WX_URL_CREATE_MENU, json.dumps(menu), access_token=get_access_token())
+    
+    return json.loads(rsp)
 
 def send_redpack(redpack):
     result = ssl_HTTP.post(WX_URL_SEND_REDPACK, redpack.xml())
@@ -192,3 +197,8 @@ def get_unlimit_qrcode_ticket(arg):
     logger.debug('get a unlimit qrcode, arg: %s, ret: %s', arg, rsp)
     rsp = json.loads(rsp)
     return rsp['ticket']
+
+def url_to_short(url):
+    data = dict(action='long2short', long_url=url)
+    rsp = HTTP.post(WX_URL_SHORTURL, json.dumps(data), access_token=get_access_token())
+    return json.loads(rsp)

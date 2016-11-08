@@ -38,6 +38,16 @@ def init_db():
             db.cursor().executescript(f.read().decode('utf-8'))
         db.commit()
 
+def create_menu():
+    menu = {
+        'button': [{
+            'type': 'view',
+            'name': 'begin game',
+            'url': app.config['WEB_ROOT']
+        }]}
+    rsp = weixin.create_menu(menu)
+    app.logger.info('create menu return: %s', rsp['errmsg'])
+
 def print_req(req, printer):
     printer(req.method)
     printer(req.url)
@@ -101,7 +111,6 @@ def _get_agent(eventkey):
 
 def _handle_subscribe(msg):
     user = service.find_user(msg.FromUserName)
-
     if 'EventKey' in msg:
         # 分销关注
         if user is None:
@@ -146,10 +155,10 @@ def callback():
         if msg.Event == 'SCAN':
             return _handle_scan(msg)
         
-    reply_msg = weixin.Message()
+    reply_msg = Message()
 
-    reply_msg.ToUserName = recv_msg.FromUserName
-    reply_msg.FromUserName = recv_msg.ToUserName
+    reply_msg.ToUserName = msg.FromUserName
+    reply_msg.FromUserName = msg.ToUserName
     reply_msg.CreateTime = int(time.time()) 
     reply_msg.MsgType = 'text'
     reply_msg.Content = weixin_oauth2_url()
@@ -191,11 +200,6 @@ def auth_redirect():
 @app.route('/access_token')
 def get_access_token():
     return weixin.get_access_token()
-
-@app.route('/menu/create', methods=['POST'])
-def create_menu():
-    weixin.create_menu()
-    return 'ok'
 
 @app.route('/jsapi/sign')
 def get_jsapi_sign():
@@ -267,6 +271,7 @@ def _send_redpack(openid, user_pay_id):
         return
 
     app.logger.info('send redpack to user: %s success, billno: %s', openid, redpack.mch_billno)
+    
     sys_pay['state'] = SUCCESS
     sys_pay['wx_billno'] = result.send_listid
     service.update_sys_pay(sys_pay)
