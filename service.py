@@ -2,6 +2,7 @@ __TABLE_COLUMNS = {
     'user': ('id', 'openid', 'agent', 'register_time'),
     'login': ('id', 'openid', 'timestamp'),
     'user_pay': ('id', 'openid', 'money', 'trade_no', 'ip', 'state', 'prepay_id', 'error_msg', 'timestamp'),
+    'sys_pay': ('id', 'openid', 'money', 'billno', 'user_pay_id', 'state', 'type', 'wx_billno', 'error_msg', 'timestamp'),
     'event': ('id', 'openid', 'type', 'info', 'timestamp'),
     }
 
@@ -60,22 +61,29 @@ def update_user_pay(pay):
     db.commit()
 
 def update_sys_pay(pay):
-    args = (pay['openid'], pay['money'], pay['user_pay_id'], pay['state'], pay.get('wx_billno'),
+    args = (pay['openid'], pay['money'], pay.get('user_pay_id'), pay['state'], pay['type'], pay.get('wx_billno'),
             pay.get('error_msg'), pay['billno'])
-    db.execute('UPDATE sys_pay SET openid=?, money=?, user_pay_id=?, state=?, wx_billno=?, error_msg=? WHERE billno=?', args)
+    db.execute('UPDATE sys_pay SET openid=?, money=?, user_pay_id=?, state=?, type=?, wx_billno=?, error_msg=? WHERE billno=?', args)
 
 def save_sys_pay(pay):
-    args = (pay['openid'], pay['money'], pay['billno'], pay['user_pay_id'],
-            pay['state'], pay.get('wx_billno'), pay.get('error_msg'))
-    db.execute('INSERT INTO sys_pay(openid, money, billno, user_pay_id, state, wx_billno, error_msg) VALUES(?, ?, ?, ?, ?, ?, ?)', args)
+    args = (pay['openid'], pay['money'], pay['billno'], pay.get('user_pay_id'),
+            pay['state'], pay['type'], pay.get('wx_billno'), pay.get('error_msg'))
+    db.execute('INSERT INTO sys_pay(openid, money, billno, user_pay_id, state, type, wx_billno, error_msg) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', args)
     db.commit()
 
+def find_sys_pay(billno):
+    args = (billno, )
+    c = db.execute('SELECT * FROM sys_pay WHERE billno=?', args)
+    row = c.fetchone()
+    if row:
+        row = _inflate('sys_pay', row)
+    return row
+    
 # 查找用户历史收入与支出
 def find_user_bill(openid):
     args = (openid, )
     c = db.execute('SELECT up.money, sp.money FROM user_pay AS up LEFT JOIN sys_pay AS sp ON up.id=sp.user_pay_id WHERE up.openid=?', args)
     return c.fetchall()
-
 
 def save_event(openid, event, info=None):
     args = (openid, event, info)
@@ -86,3 +94,13 @@ def find_events(openid, event):
     args = (openid, event)
     c = db.execute('SELECT * FROM event WHERE openid=? AND type=? ORDER BY timestamp DESC', args)
     return list(map(lambda event: _inflate('event', event), c.fetchall()))
+
+def find_unshared_profit():
+    c = db.execute("SELECT u.openid, u.agent, a.openid, p.money, p.id FROM user AS u JOIN user_pay AS p ON u.openid=p.openid JOIN user AS a ON u.agent=a.id WHERE p.state='SUCCESS' AND NOT EXISTS (SELECT * FROM share WHERE user_pay_id=p.id)")
+    keys = ('openid', 'agent', 'agent_openid', 'money', 'user_pay_id')
+    return list(map(lambda row: dict(zip(keys, row)), c.fetchall()))
+    
+def save_share(uid, sid, money):
+    args = (uid, sid, money)
+    db.execute('insert into share(user_pay_id, sys_pay_id, money) values(?, ?, ?)', args)
+    db.commit()

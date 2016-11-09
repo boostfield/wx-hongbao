@@ -175,12 +175,12 @@ def make_order(order):
 
 def create_menu(menu):
     logger.info(json.dumps(menu))
-    rsp = HTTP.post(WX_URL_CREATE_MENU, json.dumps(menu), access_token=get_access_token())
+    rsp = HTTP.post(WX_URL_CREATE_MENU, json.dumps(menu, ensure_ascii=False), access_token=get_access_token())
     
     return json.loads(rsp)
 
 def send_redpack(redpack):
-    result = ssl_HTTP.post(WX_URL_SEND_REDPACK, redpack.xml())
+    result = HTTP.ssl_post(WX_URL_SEND_REDPACK, redpack.xml())
     return result
 
 def get_unlimit_qrcode_ticket(arg):

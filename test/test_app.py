@@ -99,11 +99,11 @@ class TestCase(unittest.TestCase):
         user_pay = dict(openid=OPENID, money=4, trade_no='no4', ip='0.0.0.0', state='OK')
         service.save_user_pay(user_pay)
 
-        sys_pay = dict(openid=OPENID, money=1, billno='bill1', user_pay_id=1, state='OK')
+        sys_pay = dict(openid=OPENID, money=1, billno='bill1', user_pay_id=1, state='OK', type='return')
         service.save_sys_pay(sys_pay)
-        sys_pay = dict(openid=OPENID, money=2, billno='bill2', user_pay_id=2, state='OK')
+        sys_pay = dict(openid=OPENID, money=2, billno='bill2', user_pay_id=2, state='OK', type='return')
         service.save_sys_pay(sys_pay)
-        sys_pay = dict(openid=OPENID, money=3, billno='bill3', user_pay_id=3, state='OK')
+        sys_pay = dict(openid=OPENID, money=3, billno='bill3', user_pay_id=3, state='OK', type='return')
         service.save_sys_pay(sys_pay)
 
         bill = service.find_user_bill(OPENID)
@@ -163,6 +163,45 @@ class TestCase(unittest.TestCase):
         self.assertEqual(SUCCESS, rsp['ret'])
         self.assertIn('ticket', rsp)
 
+    def test_find_unshared_profit(self):
+        service.create_user(OPENID)
+        service.create_user('user1')
+        service.create_user('user2', 1)
+
+        user_pay = dict(openid='user0', money=1000, trade_no='no4', ip='0.0.0.0', state='OK')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user1', money=1000, trade_no='no4', ip='0.0.0.0', state='OK')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='FAIL')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='PREPAY')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+
+        sys_pay = dict(openid='user2', money=3, billno='bill3', state='OK', type='share')
+        service.save_sys_pay(sys_pay)
+        sys_pay = dict(openid='user2', money=3, billno='bill3', state='OK', type='share')
+        service.save_sys_pay(sys_pay)
+
+        service.save_share(5, 1, 1)
+        service.save_share(6, 2, 1)
+
+        profit = service.find_unshared_profit()
+        expect = [
+            dict(agent=1, agent_openid=OPENID, openid='user2', user_pay_id=7, money=1000),
+            dict(agent=1, agent_openid=OPENID, openid='user2', user_pay_id=8, money=1000),
+            dict(agent=1, agent_openid=OPENID, openid='user2', user_pay_id=9, money=1000)
+            ]
+        self.assertEqual(expect, profit)
 
 if __name__ == '__main__':
     unittest.main()

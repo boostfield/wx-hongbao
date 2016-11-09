@@ -21,12 +21,22 @@ CREATE TABLE user_pay(
     money INT NOT NULL,
     trade_no TEXT NOT NULL,
     ip TEXT NOT NULL,
-    state TEXT NOT NULL,
+    state TEXT NOT NULL,	-- FAIL/PREPAY/SUCCESS
 	prepay_id TEXT,
     error_msg TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
+DROP TABLE IF EXISTS share;
+CREATE TABLE share(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_pay_id TEXT NOT NULL,	
+	sys_pay_id TEXT NOT NULL,	-- 此次分红被合并到哪个系统支付中一并发送
+	money INT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	FOREIGN KEY(user_pay_id) REFERENCES user_pay(id),
+	FOREIGN KEY(sys_pay_id) REFERENCES sys_pay(id)
+);
 
 DROP TABLE IF EXISTS sys_pay;
 CREATE TABLE sys_pay(
@@ -34,8 +44,9 @@ CREATE TABLE sys_pay(
     openid TEXT NOT NULL,
 	money INT NOT NULL,
 	billno TEXT NOT NULL,
-	user_pay_id INTEGER NOT NULL,
+	user_pay_id INTEGER NULL,
 	state TEXT NOT NULL,
+	type TEXT NOT NULL,
 	wx_billno TEXT,
 	error_msg TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

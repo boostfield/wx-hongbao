@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 import os
 import time
@@ -29,6 +28,9 @@ weixin.APP_ID = app.config['APP_ID']
 weixin.APP_SECRET = app.config['APP_SECRET']
 weixin.API_KEY = app.config['API_KEY']
 
+SUCCESS = 'SUCCESS'
+FAIL = 'FAIL'
+
 def connect_db():
     return sqlite3.connect(app.config['CWD'] + '/' + app.config['DATABASE'])
 
@@ -42,7 +44,7 @@ def create_menu():
     menu = {
         'button': [{
             'type': 'view',
-            'name': 'begin game',
+            'name': '开始游戏',
             'url': app.config['WEB_ROOT']
         }]}
     rsp = weixin.create_menu(menu)
@@ -66,7 +68,7 @@ def _timestamp_str():
     now = datetime.now()
     return now.strftime('%Y%m%d%H%M%S%f')[0:-3]
 
-def _build_mch_billno():
+def build_mch_billno():
     return app.config['MCH_ID'] + _timestamp_str()
 
 # http_msg: request or response
@@ -76,8 +78,6 @@ def get_json_object(http_msg):
 def weixin_oauth2_url():
     return weixin.oauth2_url(app.config['RESTFUL_ROOT'] + '/auth/redirect')
 
-SUCCESS = 'SUCCESS'
-FAIL = 'FAIL'
 
 @app.before_request
 def before_request():
@@ -224,7 +224,6 @@ def _build_order(openid, money, remote_addr):
     order.sign()
     return order
 
-
 def _decide_repack_money(openid):
     strategy = app.config['RESTITUTION_STRATEGY']
     history = service.find_user_bill(openid)
@@ -232,9 +231,9 @@ def _decide_repack_money(openid):
 
 def _send_redpack(openid, user_pay_id):
     money = _decide_repack_money(openid)
-    redpack = weixin.RedPack()
+    redpack = Message()
     redpack.nonce_str = randstr()
-    redpack.mch_billno = _build_mch_billno()
+    redpack.mch_billno = build_mch_billno()
     redpack.mch_id = app.config['MCH_ID']
     redpack.wxappid = app.config['APP_ID']
     redpack.send_name = app.config['MCH_NAME']
@@ -250,7 +249,8 @@ def _send_redpack(openid, user_pay_id):
     result = weixin.send_redpack(redpack)
     result = Message(result)
 
-    sys_pay = dict(openid=openid, money=money, billno=redpack.mch_billno, user_pay_id=user_pay_id, state='SENDED')
+    sys_pay = dict(openid=openid, money=money, billno=redpack.mch_billno,
+                   user_pay_id=user_pay_id, state='SENDED', type='return')
     service.save_sys_pay(sys_pay)
 
     # todo: 给用户发红包失败后应有应对措施
@@ -361,6 +361,26 @@ def receive_tax():
     pay_sign['ret'] = SUCCESS
     pay_sign['msg'] = 'ok'
     return json.dumps(pay_sign)
+
+def _share(agent, fee, user_pay_id):
+    pass
+    
+def settlement(agent, profits):
+    fee = 0
+    for p in profits:
+        share = int(p['money'] * app.config['AGENT_SHARE_PERCENT'])
+        if fee + share > app.config['REDPACK_MAX']:
+            _share(agent, fee, p['user_pay_id'])
+            fee = 0
+        fee += share
+    _share(agent, fee, p['user_pay_id'])
+    
+@app.route('/share/profit')
+def share_profit_to_agent():
+    profits = service.find_unshared_profit()
+    for k, g in groupby(profits, lambda x: x['agent']):
+        settlement(k, g)
+
 
 # just for test
 @app.route('/test/<func>', methods=['POST'])
