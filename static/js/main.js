@@ -1,6 +1,7 @@
 URLS = {
 	getSign: "http://test.boostfield.com/api/jsapi/sign",
     requestPay: "http://test.boostfield.com/api/pay",
+	getQRcode: "http://test.boostfield.com/api/share/qrcode",
     debug: "http://test.boostfield.com/api/debug"
 };
 
@@ -30,6 +31,18 @@ function onPageLoaded() {
 		});
 	}, 'json');
 }
+
+$(document).ready(function() {
+	$("#btn-get-qrcode").click(function() {
+		$.get(URLS.getQRcode, function(ticket) {
+			if (ticket.ret != 'SUCCESS') {
+				console.log(ticket.msg);
+				return;
+			}
+			window.location.href = "qrcode.html?ticket=" + encodeURI(ticket.ticket);
+		}, 'json');
+	});
+});
 
 function onButtonClick() {
 	$.ajax({

@@ -112,9 +112,9 @@ def _get_agent(eventkey):
 def _handle_subscribe(msg):
     user = service.find_user(msg.FromUserName)
     if 'EventKey' in msg:
+        agent = _get_agent(msg.EventKey)
         # 分销关注
         if user is None:
-            agent = _get_agent(msg.EventKey)
             app.logger.info('user: %s subscribe app follow by agent: %d', msg.FromUserName, agent)
             service.create_user(msg.FromUserName, agent)
             service.save_event(msg.FromUserName, 'follow', agent)
@@ -361,26 +361,6 @@ def receive_tax():
     pay_sign['ret'] = SUCCESS
     pay_sign['msg'] = 'ok'
     return json.dumps(pay_sign)
-
-def _share(agent, fee, user_pay_id):
-    pass
-    
-def settlement(agent, profits):
-    fee = 0
-    for p in profits:
-        share = int(p['money'] * app.config['AGENT_SHARE_PERCENT'])
-        if fee + share > app.config['REDPACK_MAX']:
-            _share(agent, fee, p['user_pay_id'])
-            fee = 0
-        fee += share
-    _share(agent, fee, p['user_pay_id'])
-    
-@app.route('/share/profit')
-def share_profit_to_agent():
-    profits = service.find_unshared_profit()
-    for k, g in groupby(profits, lambda x: x['agent']):
-        settlement(k, g)
-
 
 # just for test
 @app.route('/test/<func>', methods=['POST'])

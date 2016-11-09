@@ -127,6 +127,7 @@ def get_access_token():
     if _access_token['token'] is None or _access_token['timestamp'] + 7000 <= now():
         _access_token['token'] = json.loads(HTTP.get(WX_URL_GET_ACCESS_TOKEN, grant_type='client_credential', appid=APP_ID, secret=APP_SECRET))['access_token']
         _access_token['timestamp'] = now()
+        logger.info('access_token is: %s', _access_token['token'])
     return _access_token['token']
 
 def get_web_auth_access_token(code):

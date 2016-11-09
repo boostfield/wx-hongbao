@@ -2,7 +2,7 @@
 <html lang="zh" xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-    <title>redpack-game</title>
+    <title>二维码</title>
     <!-- General META -->
     <meta charset="utf-8">
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
@@ -14,17 +14,12 @@
     <meta http-equiv="cache-control" content="no-cache">
     <meta http-equiv="expires" content="0">
     <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
-    <script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
-	<link rel="stylesheet" type="text/css" href="style.css" />
+	<script type="text/javascript" src="js/common.js"></script>
+	<script type="text/javascript" src="js/qrcode.js"></script>
 </head>
 
-<body onload="onPageLoaded()">
-  <div id="bg-img-container" >
-	<!-- <img id="bg-img" src="images/background.jpg" /> -->
-	<button id="btn-pay" type="button" onclick="onButtonClick()">抽奖</button>
-	<button id="btn-get-qrcode" type="button" >成为代理</button>
-  </div>  
+<body>
+  <img id="qrcode" src="https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket=gQFz8DoAAAAAAAAAASxodHRwOi8vd2VpeGluLnFxLmNvbS9xL1JqalU1YS1sZ2pIN3I3MVNpaFNfAAIEi2whWAMEAAAAAA%3D%3D"/>
 </body>
 
 </html>

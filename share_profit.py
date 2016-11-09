@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 
+cdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(homedir)
 import main
 from main import app
 import service
@@ -81,6 +83,7 @@ def settlement(agent, profits):
     sys_pay = _share(p['agent_openid'], fee, p['user_pay_id'])
     save_shares(profits_in_one_share, sys_pay['id'])
         
+app.logger.info('share_profit run')
 service.db = main.connect_db()
 weixin.ssl_cert_file = './apiclient_cert.pem'
 weixin.ssl_key_file = './apiclient_key.pem'
