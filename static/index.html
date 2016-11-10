@@ -20,11 +20,94 @@
 </head>
 
 <body onload="onPageLoaded()">
-  <div id="bg-img-container" >
-	<!-- <img id="bg-img" src="images/background.jpg" /> -->
-	<button id="btn-pay" type="button" onclick="onButtonClick()">抽奖</button>
-	<button id="btn-get-qrcode" type="button" >成为代理</button>
-  </div>  
+      <div class="container">
+          <!-- 抢红包 -->
+          <div id="page-home" class="page active">
+              <!--
+              <button id="btn-pay" type="button" onclick="onButtonClick()">抽奖</button>
+              <button id="btn-get-qrcode" type="button" >成为代理</button>
+              -->
+             <button id="btnGetRedPack"></button>
+          </div>
+
+          <!-- 我的业绩 -->
+          <div id="page-agent" class="page">
+              <div class="agent-title">
+                  <div class="sended">
+                      2000元
+                  </div>
+                  <div class="unsend">
+                      500元
+                  </div>
+              </div>
+              <div class="list-container">
+                  <div class="list-title">
+                      业绩明细
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+                  <div class="list-item">
+                      2016-11-10 20:13
+                  </div>
+              </div>
+
+          </div>
+
+          <!-- 推广 -->
+          <div id="page-share" class="page">
+
+          </div>
+      </div>
+
+      <div class="tabbar">
+          <div class="tabbar-item home active">
+              <p>抢红包</p>
+          </div>
+          <div class="tabbar-item agent">
+              <p>我的业绩</p>
+          </div>
+          <div class="tabbar-item share">
+              <p>推广</p>
+          </div>
+      </div>
+
 </body>
 
 </html>

@@ -42,6 +42,27 @@ $(document).ready(function() {
 			window.location.href = "qrcode.html?ticket=" + encodeURI(ticket.ticket);
 		}, 'json');
 	});
+
+	$(".tabbar-item").click(function() {
+		$(this).addClass("active");
+		$(".tabbar-item").not(this).each(function() {
+			$(this).removeClass("active");
+		});
+
+		if($(this).hasClass("home")) {
+			$('#page-home').addClass("active");
+			$('#page-agent').removeClass("active");
+			$('#page-share').removeClass("active");
+		} else if($(this).hasClass("agent")) {
+			$('#page-home').removeClass("active");
+			$('#page-agent').addClass("active");
+			$('#page-share').removeClass("active");
+		} else {
+			$('#page-home').removeClass("active");
+			$('#page-agent').removeClass("active");
+			$('#page-share').addClass("active");
+		}
+	});
 });
 
 function onButtonClick() {
