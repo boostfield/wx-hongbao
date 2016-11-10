@@ -18,16 +18,11 @@ if url['errcode'] != 0:
     exit(1)
 
 print('download qrcode from: ' + 'http://qr.topscan.com/api.php?' + urllib.parse.urlencode({'text': url['short_url']}))
-
-def append_file(path, line):
-    with open(path, mode='a') as f:
-        f.write(line)
-        f.write('\n')
         
-append_file(homedir + '/conf/config.py', "AUTH2_SHORT_URL = '{}'".format(url['short_url']))
+os.system("sed -i '/AUTH2_SHORT_URL/c\AUTH2_SHORT_URL = \"{}\"\' {}/{}".format(url['short_url'], homedir, '/conf/config.py'))
 
 # 定时为代理分红
-cmd = "echo '0 * * * * {}/share_profit.py' | crontab -".format(homedir)
+cmd = "echo '0 10 * * * {}/share_profit.py' | crontab -".format(homedir)
 print('install crontab task to system:')
 print(cmd)
 os.system(cmd)

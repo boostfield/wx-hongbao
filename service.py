@@ -104,3 +104,59 @@ def save_share(uid, sid, money):
     args = (uid, sid, money)
     db.execute('insert into share(user_pay_id, sys_pay_id, money) values(?, ?, ?)', args)
     db.commit()
+
+def find_agent_bill(openid, offset=0, limit=50):
+    args = (openid, limit, offset)
+    c = db.execute(
+        "SELECT u.openid, up.id, up.money, up.timestamp, s.money, s.timestamp, s.sys_pay_id \
+        FROM user AS agent \
+        JOIN user AS u \
+        ON u.agent=agent.id \
+        JOIN user_pay AS up \
+        ON up.openid=u.openid \
+        LEFT JOIN share AS s \
+        ON up.id=s.user_pay_id \
+        WHERE agent.openid=? \
+        AND up.state='SUCCESS' \
+        ORDER BY up.id DESC \
+        LIMIT ? \
+        OFFSET ?", args)
+    keys = ('openid', 'user_pay_id', 'money', 'timestamp', 'shared_money', 'shared_timestamp', 'sys_pay_id')
+    return list(map(lambda row: dict(zip(keys, row)), c.fetchall()))
+
+def find_follower_num(openid):
+    args = (openid, )
+    c = db.execute('SELECT count(*) FROM user AS a JOIN user AS f ON f.agent=a.id WHERE a.openid=?', args)
+    return c.fetchone()[0]
+
+def find_agent_bill_num(openid):
+    args = (openid, )
+    c = db.execute(
+        "SELECT count(*) \
+        FROM user AS agent \
+        JOIN user AS u \
+        ON u.agent=agent.id \
+        JOIN user_pay AS up \
+        ON up.openid=u.openid \
+        LEFT JOIN share AS s \
+        ON up.id=s.user_pay_id \
+        WHERE agent.openid=? \
+        AND up.state='SUCCESS'", args)
+    return c.fetchone()[0]
+
+def find_agent_shared_bill_num(openid):
+    args = (openid, )
+    c = db.execute(
+        "SELECT count(*) \
+        FROM user AS agent \
+        JOIN user AS u \
+        ON u.agent=agent.id \
+        JOIN user_pay AS up \
+        ON up.openid=u.openid \
+        JOIN share AS s \
+        ON up.id=s.user_pay_id \
+        WHERE agent.openid=? \
+        AND up.state='SUCCESS'", args)
+    return c.fetchone()[0]
+
+    

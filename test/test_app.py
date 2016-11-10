@@ -8,6 +8,7 @@ import json
 import main
 import service
 import weixin
+from base import anything
 
 FAIL = 'FAIL'
 SUCCESS = 'SUCCESS'
@@ -203,5 +204,68 @@ class TestCase(unittest.TestCase):
             ]
         self.assertEqual(expect, profit)
 
+    def test_find_follower_num(self):
+        service.create_user(OPENID)
+        service.create_user('user1')
+        service.create_user('user2', 1)
+        service.create_user('user3', 1)
+        service.create_user('user4', 1)
+        self.assertEqual(3, service.find_follower_num(OPENID)) 
+        
+    def test_find_agent_bill(self):
+        service.create_user(OPENID)
+        service.create_user('user1')
+        service.create_user('user2', 1)
+
+        user_pay = dict(openid='user1', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user1', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='FAIL')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='PREPAY')
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
+        service.save_user_pay(user_pay)
+
+        sys_pay = dict(openid='user2', money=50, billno='bill3', state='OK', type='share')
+        service.save_sys_pay(sys_pay)
+        sys_pay = dict(openid='user2', money=50, billno='bill3', state='OK', type='share')
+        service.save_sys_pay(sys_pay)
+
+        service.save_share(5, 1, 50)
+        service.save_share(6, 2, 50)
+
+        expect = [
+            dict(openid='user2', user_pay_id=9, money=1000, timestamp=anything(), shared_money=None, shared_timestamp=anything(), sys_pay_id=None),
+            dict(openid='user2', user_pay_id=8, money=1000, timestamp=anything(), shared_money=None, shared_timestamp=anything(), sys_pay_id=None),
+            dict(openid='user2', user_pay_id=7, money=1000, timestamp=anything(), shared_money=None, shared_timestamp=anything(), sys_pay_id=None),
+            dict(openid='user2', user_pay_id=6, money=1000, timestamp=anything(), shared_money=50, shared_timestamp=anything(), sys_pay_id=2),
+            dict(openid='user2', user_pay_id=5, money=1000, timestamp=anything(), shared_money=50, shared_timestamp=anything(), sys_pay_id=1)
+            ]
+        self.assertEqual(expect, service.find_agent_bill(OPENID))
+
+        self.login(OPENID)
+        rsp = self.app.get('/agent/account')
+        rsp = json.loads(rsp.data.decode('utf-8'))
+        expect = dict(ret=SUCCESS, msg='ok', follower_num=1, page=0, pagesize=50, total_bill_num=5,
+                      shared_bill_num=2, total_income=250, shared_income=100,
+                      bills=[
+                          dict(income=50, shared=False, share_time=None, time=anything()),
+                          dict(income=50, shared=False, share_time=None, time=anything()),
+                          dict(income=50, shared=False, share_time=anything(), time=anything()),
+                          dict(income=50, shared=True, share_time=anything(), time=anything()),
+                          dict(income=50, shared=True, share_time=anything(), time=anything())
+                          ])
+        self.assertEqual(expect, rsp)
+        
 if __name__ == '__main__':
     unittest.main()

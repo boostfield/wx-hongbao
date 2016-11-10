@@ -40,6 +40,9 @@ def init_db():
             db.cursor().executescript(f.read().decode('utf-8'))
         db.commit()
 
+def shared_money(money):
+    return int(money * app.config['AGENT_SHARE_PERCENT'])
+
 def create_menu():
     menu = {
         'button': [{
@@ -362,6 +365,35 @@ def receive_tax():
     pay_sign['msg'] = 'ok'
     return json.dumps(pay_sign)
 
+@app.route('/agent/account')
+def get_user_account_detail_as_agent():
+    openid = session.get('openid')
+    if openid is None:
+        access_token = weixin.get_web_auth_access_token(request.args.get('code'))
+        openid = access_token['openid']
+
+    page = request.args.get('page', 0)
+    pagesize = request.args.get('pagesize', 50)
+    _offset = page * pagesize
+    
+    total_bill_num = service.find_agent_bill_num(openid)
+    shared_bill_num = service.find_agent_shared_bill_num(openid)
+    bills = service.find_agent_bill(openid, _offset, pagesize)
+
+    total_income = 0
+    shared_income = 0
+    ret_bills = []
+    for b in bills:
+        income = shared_money(b['money'])
+        total_income += income
+        shared_income += b['shared_money'] or 0
+        ret_bills.append(dict(income=income, time=b['timestamp'], shared=(b['shared_money'] is not None), share_time=b['shared_timestamp']))
+
+    ret = dict(ret=SUCCESS, msg='ok', total_bill_num=total_bill_num, shared_bill_num=shared_bill_num,
+               page=page, pagesize=pagesize, total_income=total_income, shared_income=shared_income,
+               follower_num=service.find_follower_num(openid), bills=ret_bills)
+    return json.dumps(ret)
+    
 # just for test
 @app.route('/test/<func>', methods=['POST'])
 def test(func):

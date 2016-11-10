@@ -30,8 +30,8 @@ CREATE TABLE user_pay(
 DROP TABLE IF EXISTS share;
 CREATE TABLE share(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-	user_pay_id TEXT NOT NULL,	
-	sys_pay_id TEXT NOT NULL,	-- 此次分红被合并到哪个系统支付中一并发送
+	user_pay_id INT NOT NULL,	
+	sys_pay_id INT NOT NULL,	-- 此次分红被合并到哪个系统支付中一并发送
 	money INT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	FOREIGN KEY(user_pay_id) REFERENCES user_pay(id),
