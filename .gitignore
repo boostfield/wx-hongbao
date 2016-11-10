@@ -3,4 +3,5 @@
 *.pem
 log/
 test.py
+static/images/entry_qrcode.png
 MP_verify_O6UrgEPBKJpwBg64.txt
