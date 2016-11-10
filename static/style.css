@@ -30,7 +30,7 @@ body {
 	background-image: url(images/img_qianghongbao.png);
 	background-size: cover;
 	background-repeat: no-repeat;
-	background-position: center;
+	background-position: top;
 
 }
 #page-agent {
@@ -38,7 +38,7 @@ body {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: top;
-    background-color: red;
+    background-color: #C82E20;
 }
 .agent-title {
     padding-top: 130px;
@@ -92,12 +92,12 @@ body {
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
-    background-color: yellow;
+    background-color: transparent;
     border: none;
     outline: none;
     box-shadow: none;
     position: absolute;
-    bottom: 30%;
+    bottom: 32%;
     left: 50%;
     -webkit-transform: translateX(-50%);
     transform: translateX(-50%);;
