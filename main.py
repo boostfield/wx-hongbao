@@ -186,7 +186,9 @@ def auth_redirect():
     openid = session.get('openid')
     if openid is None:
         access_token = weixin.get_web_auth_access_token(request.args.get('code'))
-        app.logger.info(access_token)
+        if 'errcode' in access_token:
+            app.logger.warn("get weixin auth access token failed: %d:%s", access_token['errcode'], access_token['errmsg'])
+            return redirect(weixin_oauth2_url())
         openid = access_token['openid']
 
     # 记录用户登录信息
@@ -369,8 +371,7 @@ def receive_tax():
 def get_user_account_detail_as_agent():
     openid = session.get('openid')
     if openid is None:
-        access_token = weixin.get_web_auth_access_token(request.args.get('code'))
-        openid = access_token['openid']
+        return redirect(weixin_oauth2_url())
 
     page = request.args.get('page', 0)
     pagesize = request.args.get('pagesize', 50)
