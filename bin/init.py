@@ -10,6 +10,7 @@ sys.path.append(homedir)
 import main
 import weixin
 
+os.system('mkdir -p ../log')
 main.init_db()
 
 main.create_menu()

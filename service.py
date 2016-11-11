@@ -159,4 +159,7 @@ def find_agent_shared_bill_num(openid):
         AND up.state='SUCCESS'", args)
     return c.fetchone()[0]
 
-    
+def find_user_last_income(openid):
+    args = (openid, )
+    c = db.execute("SELECT money, timestamp FROM sys_pay WHERE openid=? AND state='SUCCESS' AND type='RETURN' ORDER BY timestamp DESC LIMIT 1", args)
+    return c.fetchone()

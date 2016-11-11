@@ -255,7 +255,7 @@ def _send_redpack(openid, user_pay_id):
     result = Message(result)
 
     sys_pay = dict(openid=openid, money=money, billno=redpack.mch_billno,
-                   user_pay_id=user_pay_id, state='SENDED', type='return')
+                   user_pay_id=user_pay_id, state='SENDED', type='RETURN')
     service.save_sys_pay(sys_pay)
 
     # todo: 给用户发红包失败后应有应对措施
@@ -341,16 +341,16 @@ def receive_tax():
         ip=remote_addr,
         )
 
-    if result.return_code == 'FAIL':
+    if result.return_code == FAIL:
         app.logger.warning('communication error while make order, reason: %s', result.return_msg)
-        pay_info['state'] = 'FAIL'
+        pay_info['state'] = FAIL
         pay_info['error_msg'] = result.return_msg
         service.save_user_pay(pay_info)
         return ret_msg(FAIL, result.return_msg)
 
-    if result.result_code == 'FAIL':
+    if result.result_code == FAIL:
         app.logger.warning('make order to weixin failed, reason: %d:%s', result.err_code, result.err_code_des)
-        pay_info['state'] = 'FAIL'
+        pay_info['state'] = FAIL
         pay_info['error_msg'] = result.err_code_des
         service.save_user_pay(pay_info)
         return ret_msg(FAIL, "{}:{}".format(result.err_code, result.err_code_des))
@@ -366,6 +366,21 @@ def receive_tax():
     pay_sign['ret'] = SUCCESS
     pay_sign['msg'] = 'ok'
     return json.dumps(pay_sign)
+
+@app.route('/income/last')
+def get_user_last_income():
+    openid = session.get('openid')
+    if openid is None:
+        return redirect(weixin_oauth2_url())
+
+    rsp = service.find_user_last_income(openid)
+    rsp = rsp or (None, None)
+    ret = dict(ret=SUCCESS, msg='ok', money=rsp[0], time=rsp[1])
+    if rsp[0] is None:
+        ret['msg'] = 'not found' 
+    
+    return json.dumps(ret)
+
 
 @app.route('/agent/account')
 def get_user_account_detail_as_agent():
