@@ -387,9 +387,10 @@ def get_user_account_detail_as_agent():
     openid = session.get('openid')
     if openid is None:
         return redirect(weixin_oauth2_url())
+    # todo: 检查参数中是否仅包含数字
 
-    page = request.args.get('page', 0)
-    pagesize = request.args.get('pagesize', 50)
+    page = int(request.args.get('page', 0))
+    pagesize = int(request.args.get('pagesize', 50))
     _offset = page * pagesize
     
     total_bill_num = service.find_agent_bill_num(openid)

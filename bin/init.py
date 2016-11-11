@@ -12,8 +12,8 @@ import weixin
 
 os.system('mkdir -p ../log')
 main.init_db()
-
 main.create_menu()
+os.system('lessc {}/static/style.less > {}/static/style.css'.format(homedir, homedir))
 
 # 获取主页短链接
 url = weixin.url_to_short(main.weixin_oauth2_url())
