@@ -123,9 +123,11 @@ $(document).ready(function() {
 	});
 
 	$('.list-footer').click(function () {
+		$('.list-footer').text("加载中...");
 		$.get(URLS.getAgentAccount, { page: currentPage, pagesize: pageSize }, function(rsp) {
 			if (rsp.ret == "SUCCESS") {
 				console.log(rsp);
+				$('.list-footer').text("加载更多");
 				var list = $('div.list-content');
 				$.each(rsp.bills, function(i, bill) {
 					list.append(newListContent(bill.income, bill.time));
@@ -141,9 +143,10 @@ $(document).ready(function() {
 	});
 
 	$.get(URLS.getAgentAccount, { page: currentPage, pagesize: pageSize }, function(rsp) {
+
 		if (rsp.ret == "SUCCESS") {
 			console.log(rsp);
-
+			$('.list-footer').text("加载更多");
 			$('div.sended').text(point2yuan(rsp.total_income));
 			$('div.unsend').text(point2yuan(rsp.shared_income));
 			var list = $('div.list-content');
