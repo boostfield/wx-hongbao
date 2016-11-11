@@ -13,16 +13,15 @@ body {
 	padding: 0;
 	background: @primary-red;
 	font-family: "Microsoft YaHei";
-	display:flex;
-	height:100%;
-	flex-direction: column;
+	height: 100%;
     font-size: 20px;
+
 }
 .container {
-	flex:1;
+    height: 100%;
+    width: 100%;
 	position: relative;
-	width: 100%;
-    padding-bottom: 56px;
+    margin-bottom: -56px;
 }
 .page {
 	display: none;
@@ -75,12 +74,13 @@ body {
     background-position: top;
     .background-container {
       position: relative;
-      background-image: url(images/img_achievement.png);
+      background-color: #C82E20;
+      background-image: url(images/img_achievement.png), url(images/bg_yellow.png);
       background-size: contain;
       background-repeat: no-repeat;
       background-position: top;
       width: 100%;
-      height: 100%;
+
 
     }
 
@@ -110,7 +110,8 @@ body {
     }
 
     .list-container {
-      padding: 1em;
+      padding: 1em 1em 76px 1em;
+
         .list-title {
           padding-bottom: 6px;
           font-size: 0.8em;
@@ -201,9 +202,9 @@ body {
 }
 
 #modal {
-
     position: absolute;
     z-index: 999;
+    top: 0;
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
