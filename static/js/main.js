@@ -122,15 +122,40 @@ $(document).ready(function() {
 		$(this).hide();
 	});
 
+	$('.list-footer').click(function () {
+		$.get(URLS.getAgentAccount, { page: currentPage, pagesize: pageSize }, function(rsp) {
+			if (rsp.ret == "SUCCESS") {
+				console.log(rsp);
+				var list = $('div.list-content');
+				$.each(rsp.bills, function(i, bill) {
+					list.append(newListContent(bill.income, bill.time));
+				});
+				currentPage++;
+				if(rsp.total_bill_num > currentPage*pageSize) {
+					$('.list-footer').show();
+				}else {
+					$('.list-footer').hide();
+				}
+			}
+		}, 'json');
+	});
+
 	$.get(URLS.getAgentAccount, { page: currentPage, pagesize: pageSize }, function(rsp) {
 		if (rsp.ret == "SUCCESS") {
 			console.log(rsp);
+
 			$('div.sended').text(point2yuan(rsp.total_income));
 			$('div.unsend').text(point2yuan(rsp.shared_income));
 			var list = $('div.list-content');
 			$.each(rsp.bills, function(i, bill) {
 				list.append(newListContent(bill.income, bill.time));
 			});
+			currentPage++;
+			if(rsp.total_bill_num > currentPage*pageSize) {
+				$('.list-footer').show();
+			}else {
+				$('.list-footer').hide();
+			}
 		}
 	}, 'json');
 	
