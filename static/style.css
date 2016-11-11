@@ -4,7 +4,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background: green;
+  background: #F10A00;
   font-family: "Microsoft YaHei";
   display: flex;
   height: 100%;
@@ -14,22 +14,28 @@ body {
 .container {
   flex: 1;
   position: relative;
-  color: gray;
   width: 100%;
   padding-bottom: 56px;
 }
 .page {
   display: none;
   height: 100%;
+  background-image: url(images/bg_yellow.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 .page.active {
   display: block;
 }
-#page-home {
+#page-home .background-container {
+  position: relative;
   background-image: url(images/img_qianghongbao.png);
-  background-size: cover;
+  background-size: contain;
   background-repeat: no-repeat;
-  background-position: top;
+  background-position: center;
+  width: 100%;
+  height: 100%;
 }
 #page-home #btnGetRedPack {
   width: 230px;
@@ -52,11 +58,20 @@ body {
   background-image: url(images/bt_qianghongbao_p.png);
 }
 #page-agent {
+  background-color: #C82E20;
+  background-image: url(images/bg_yellow.png);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top;
+}
+#page-agent .background-container {
+  position: relative;
   background-image: url(images/img_achievement.png);
   background-size: contain;
   background-repeat: no-repeat;
   background-position: top;
-  background-color: #C82E20;
+  width: 100%;
+  height: 100%;
 }
 #page-agent .sended {
   background-image: url(images/hint_sended.png);
@@ -73,7 +88,7 @@ body {
   background-position: 20% center;
   font-size: 1.5em;
   padding-left: 24%;
-  margin-top: 1em;
+  margin-top: 20px;
 }
 #page-agent .agent-title {
   padding-top: 130px;
@@ -83,21 +98,46 @@ body {
 #page-agent .list-container {
   padding: 1em;
 }
-#page-agent .list-title {
+#page-agent .list-container .list-title {
+  padding-bottom: 6px;
   font-size: 0.8em;
   color: white;
   letter-spacing: 0px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
-#page-agent .list-item {
+#page-agent .list-container .list-item {
   font-size: 0.9em;
   color: #FFDF5D;
-  padding: 10px 0;
+  height: 40px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
 }
-#page-share {
-  background-image: url(images/img_share.png);
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
+#page-agent .list-container .list-item span {
+  display: inline-block;
+  line-height: 40px;
+}
+#page-agent .list-container .list-item .fund {
+  float: left;
+}
+#page-agent .list-container .list-item .time {
+  float: right;
+}
+#page-share #shareCanvas {
+  display: none;
+}
+#page-share .imgContianer {
+  display: none;
+}
+#page-share p {
+  position: absolute;
+  bottom: 82px;
+  width: 100%;
+  left: 50%;
+  text-align: center;
+  font-size: 0.8em;
+  color: #E73325;
+  letter-spacing: 0px;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
 }
 .tabbar {
   height: 56px;
@@ -132,5 +172,46 @@ body {
   background-repeat: no-repeat;
 }
 .tabbar .tabbar-item.active {
-  color: #ffdf5d;
+  color: #FFDF5D;
+}
+#modal {
+  position: absolute;
+  z-index: 999;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  background-image: url(images/img_popup.png), url(images/img_popup_close.png);
+  background-repeat: no-repeat;
+  background-size: contain, 36px;
+  background-position: center, 90% 20%;
+  -webkit-transition: all 0.25s;
+  -moz-transition: all 0.25s;
+  transition: all 0.25s;
+}
+#modal p {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  font-size: 2.3em;
+  color: white;
+  letter-spacing: 0px;
+  text-shadow: 0px 4px 2px rgba(0, 0, 0, 0.1);
+}
+#modal button {
+  border: 1px solid white;
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  width: 176px;
+  height: 50px;
+  background-color: transparent;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  font-size: 0.8em;
+  color: white;
+  letter-spacing: 0px;
+  box-shadow: 0px 7px 0px 0px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
 }
