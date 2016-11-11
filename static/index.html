@@ -20,11 +20,146 @@
 </head>
 
 <body onload="onPageLoaded()">
-  <div id="bg-img-container" >
-	<!-- <img id="bg-img" src="images/background.jpg" /> -->
-	<button id="btn-pay" type="button" onclick="onButtonClick()">抽奖</button>
-	<button id="btn-get-qrcode" type="button" >成为代理</button>
-  </div>  
+      <div class="container">
+          <!-- 抢红包 -->
+          <div id="page-home" class="page active">
+              <!--
+              <button id="btn-pay" type="button" onclick="onButtonClick()">抽奖</button>
+              <button id="btn-get-qrcode" type="button" >成为代理</button>
+              -->
+              <div class="background-container">
+                  <button id="btnGetRedPack"></button>
+              </div>
+
+          </div>
+
+          <!-- 我的业绩 -->
+          <div id="page-agent" class="page">
+              <div class="background-container">
+                  <div>
+                      <div class="agent-title">
+                          <div class="sended">
+                              2000元
+                          </div>
+                          <div class="unsend">
+                              500元
+                          </div>
+                      </div>
+                      <div class="list-container">
+                          <div class="list-title">
+                              业绩明细
+                          </div>
+                          <div class="list-content">
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+
+                              <div class="list-item">
+                                  <span class="fund">10元</span>
+                                  <span class="time">2016-11-10 20:13</span>
+                              </div>
+                          </div>
+
+
+                      </div>
+                  </div>
+
+              </div>
+
+
+          </div>
+
+          <!-- 推广 -->
+          <div id="page-share" class="page">
+
+                <canvas id="shareCanvas" width="300" height="450">
+
+                </canvas>
+                <div class="imgContianer">
+                      <img id="imageBackground" src="images/bg_yellow.png" width="375"/>
+                      <img id="imageBG" src="images/img_share.png" width="347"/>
+                      <img id="imageQR" src="images/qr_code.png" width="160">
+                </div>
+
+                <img id="imageResult" />
+                <p>长按二维码保存图片，<br>
+                    分享给小伙伴可享5%提成。</p>
+          </div>
+      </div>
+
+      <div class="tabbar">
+          <div class="tabbar-item home active">
+              <p>抢红包</p>
+          </div>
+          <div class="tabbar-item agent">
+              <p>我的业绩</p>
+          </div>
+          <div class="tabbar-item share">
+              <p>推广</p>
+          </div>
+      </div>
+
+
+      <div id="modal">
+          <p>100元</p>
+          <button>知道了</button>
+      </div>
 </body>
 
 </html>

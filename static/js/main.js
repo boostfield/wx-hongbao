@@ -42,6 +42,34 @@ $(document).ready(function() {
 			window.location.href = "qrcode.html?ticket=" + encodeURI(ticket.ticket);
 		}, 'json');
 	});
+
+	$(".tabbar-item").click(function() {
+		$(this).addClass("active");
+		$(".tabbar-item").not(this).each(function() {
+			$(this).removeClass("active");
+		});
+
+		if($(this).hasClass("home")) {
+			$('#page-home').addClass("active");
+			$('#page-agent').removeClass("active");
+			$('#page-share').removeClass("active");
+		} else if($(this).hasClass("agent")) {
+			$('#page-home').removeClass("active");
+			$('#page-agent').addClass("active");
+			$('#page-share').removeClass("active");
+		} else {
+			$('#page-home').removeClass("active");
+			$('#page-agent').removeClass("active");
+			$('#page-share').addClass("active");
+		}
+	});
+
+	$('#modal').click(function() {
+		$(this).hide();
+	});
+
+	generateShareImage();
+
 });
 
 function onButtonClick() {
@@ -67,4 +95,24 @@ function onButtonClick() {
 
 function onCheckButtonClick() {
 	alert('check');
+}
+
+function generateShareImage() {
+	var canvas = document.getElementById("shareCanvas");
+	canvas.width = screen.width;
+	canvas.height = screen.height - 56;
+	var imageBackground = document.getElementById("imageBackground");
+	var imageBG = document.getElementById("imageBG");
+	var imageQR = document.getElementById("imageQR");
+	var imageBGWidth = 347/375*screen.width;
+	var imageBGHeight = 336/347*imageBGWidth;
+	var imageQRWidth = 160/375*screen.width;
+
+	var ctx = canvas.getContext("2d");
+	ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
+	ctx.drawImage(imageBG, (canvas.width - imageBGWidth) / 2, (canvas.height - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
+	ctx.drawImage(imageQR,  (canvas.width - imageQRWidth) / 2, (canvas.height - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+	var dataURL = canvas.toDataURL();
+
+	document.getElementById("imageResult").src = dataURL;
 }
