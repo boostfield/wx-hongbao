@@ -4,13 +4,13 @@ import os
 import sys
 import urllib
 
+os.system('mkdir -p ../log')
 cdir = os.path.dirname(os.path.abspath(__file__))
 homedir = os.path.join(cdir, '..')
 sys.path.append(homedir)
 import main
 import weixin
 
-os.system('mkdir -p ../log')
 main.init_db()
 main.create_menu()
 os.system('lessc {}/static/style.less > {}/static/style.css'.format(homedir, homedir))

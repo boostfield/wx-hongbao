@@ -1,11 +1,10 @@
 from __future__ import print_function
 import os
-import time
 import sqlite3
 from datetime import datetime
 from logging import Formatter, FileHandler
 import json
-import uuid
+from common import randstr, now_sec
 from flask import Flask, request, redirect, session, g, abort
 import service
 import restitution_counter
@@ -64,9 +63,6 @@ def print_req(req, printer):
 def ret_msg(ret, msg = ''):
     return json.dumps({ 'ret': ret, 'msg': msg })
 
-def randstr():
-    return uuid.uuid4().hex
-
 def _timestamp_str():
     now = datetime.now()
     return now.strftime('%Y%m%d%H%M%S%f')[0:-3]
@@ -80,7 +76,6 @@ def get_json_object(http_msg):
 
 def weixin_oauth2_url():
     return weixin.oauth2_url(app.config['RESTFUL_ROOT'] + '/auth/redirect')
-
 
 @app.before_request
 def before_request():
@@ -97,6 +92,7 @@ def after_request(response):
 @app.route('/')
 def print_request():
     print_req(request, print)
+    app.logger.info('fuck')
     return 'fuck'
 
 @app.route('/debug', methods=['POST'])
@@ -115,6 +111,7 @@ def _get_agent(eventkey):
 def _handle_subscribe(msg):
     user = service.find_user(msg.FromUserName)
     if 'EventKey' in msg:
+        app.logger.info(msg)
         agent = _get_agent(msg.EventKey)
         # 分销关注
         if user is None:
@@ -162,7 +159,7 @@ def callback():
 
     reply_msg.ToUserName = msg.FromUserName
     reply_msg.FromUserName = msg.ToUserName
-    reply_msg.CreateTime = int(time.time()) 
+    reply_msg.CreateTime = now_sec()
     reply_msg.MsgType = 'text'
     reply_msg.Content = weixin_oauth2_url()
 
@@ -170,13 +167,15 @@ def callback():
 
 @app.route('/share/qrcode')
 def get_user_share_qrcode():
-    openid = session.get('openid')
+    #openid = session.get('openid')
+    openid = 'oenW2wz47W1RisML5QijHzwRz34M'#session.get('openid')
     if not openid:
         return redirect(weixin_oauth2_url())
 
     user = service.find_user(openid)
     rsp = dict(ret=SUCCESS, msg='ok')
     rsp['ticket'] = weixin.get_unlimit_qrcode_ticket(user['id'])
+    app.logger.info(rsp)
     
     return json.dumps(rsp)
 
@@ -293,6 +292,12 @@ def process_pay_result():
         app.logger.warning('communication error while pay notify, reason: %s', result.return_msg)
         return reply.xml()
 
+    if not result.check_sign():
+        app.logger.warning('check weixin pay notify sign failed, openid: %s, from ip: %s', result.openid, request.environ['REMOTE_ADDR'])
+        reply.return_code = FAIL
+        rsply.return_msg = 'check sign failed'
+        return reply.xml()
+    
     openid = result.openid
     trade_no = result.out_trade_no
     pay = service.find_user_pay(trade_no)
@@ -333,6 +338,7 @@ def receive_tax():
         return ret_msg(FAIL, 'money content error')
 
     order = _build_order(openid, data['money'], remote_addr)
+    app.logger.info(order.xml())
     result = weixin.make_order(order)
     pay_info = dict(
         openid=openid,
@@ -369,7 +375,7 @@ def receive_tax():
 
 @app.route('/income/last')
 def get_user_last_income():
-    openid = session.get('openid')
+    openid = 'oenW2wz47W1RisML5QijHzwRz34M'#session.get('openid')
     if openid is None:
         return redirect(weixin_oauth2_url())
 
@@ -378,13 +384,13 @@ def get_user_last_income():
     ret = dict(ret=SUCCESS, msg='ok', money=rsp[0], time=rsp[1])
     if rsp[0] is None:
         ret['msg'] = 'not found' 
-    
+        
     return json.dumps(ret)
 
 
 @app.route('/agent/account')
 def get_user_account_detail_as_agent():
-    openid = session.get('openid')
+    openid = 'oenW2wz47W1RisML5QijHzwRz34M'#session.get('openid')
     if openid is None:
         return redirect(weixin_oauth2_url())
     # todo: 检查参数中是否仅包含数字
