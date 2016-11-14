@@ -192,12 +192,18 @@ $(document).ready(function() {
 			var imageQRWidth = 160/375*canvasWidth;
 
 			var ctx = canvas.getContext("2d");
-			//ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
+			ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
 			ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
-			ctx.drawImage(image,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+			try {
+				ctx.drawImage(image,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+				var dataURL = canvas.toDataURL();
+				$('#imageResult').attr("src", dataURL);
+			}
+			catch(err)
+			{
+				alert(error);
+			}
 
-			var dataURL = canvas.toDataURL();
-			$('#imageResult').attr("src", dataURL);
 		};
 		imageQR.src = qrurl;
 	}, 'json');
