@@ -164,6 +164,7 @@ $(document).ready(function() {
 	$.get(URLS.getQRcode, function(rsp) {
 		var qrurl = URLS.weixinQRcode + '?ticket=' + rsp.ticket;
 		console.log(qrurl);
+		alert("qrurl " + qrurl);
 		$('#imageQR').attr("onload", "generateShareImage()");
 		$('#imageQR').attr("src", qrurl);
 	}, 'json');
@@ -175,7 +176,7 @@ function generateShareImage() {
 	var canvas = document.getElementById("shareCanvas");
 	canvas.width = screen.width;
 	canvas.height = screen.height - 56;
-	var imageBackground = document.getElementById("imageBackground");
+	//var imageBackground = document.getElementById("imageBackground");
 	//var imageBG = document.getElementById("imageBG");
 	
 	var imageQR = document.getElementById("imageQR");
