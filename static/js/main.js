@@ -174,8 +174,10 @@ $(document).ready(function() {
 		var qrurl = URLS.weixinQRcode + '?ticket=' + rsp.ticket;
 		console.log(qrurl);
 		alert("qrurl " + qrurl);
-		$('#imageQR').attr("onload", "generateShareImage()");
-		$('#imageQR').attr("src", qrurl);
+		//todo for test only
+		$('#imageResult').src = qrurl;
+		//$('#imageQR').attr("onload", "generateShareImage()");
+		//$('#imageQR').attr("src", qrurl);
 	}, 'json');
 
 
