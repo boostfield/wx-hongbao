@@ -172,7 +172,7 @@ $(document).ready(function() {
 		var qrurl = URLS.weixinQRcode + '?ticket=' + rsp.ticket;
 		console.log(qrurl);
 		var image = new Image();
-		image.onload = function() {
+		image.onload = function(img) {
 			var canvas = document.getElementById("shareCanvas");
 			canvas.width = screen.width;
 			canvas.height = screen.height - 56;
@@ -188,7 +188,7 @@ $(document).ready(function() {
 			var ctx = canvas.getContext("2d");
 			//ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
 			ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasWidth - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
-			ctx.drawImage(image,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+			ctx.drawImage(img,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 
 			var dataURL = canvas.toDataURL();
 			$('#imageResult').attr("src", dataURL);
