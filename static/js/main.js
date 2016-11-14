@@ -172,7 +172,7 @@ $(document).ready(function() {
 		var qrurl = URLS.weixinQRcode + '?ticket=' + rsp.ticket;
 		console.log(qrurl);
 		var imageQR = new Image();
-		imageQR.crossOrigin = 'anonymous';
+		imageQR.crossOrigin = 'Anonymous';
 		imageQR.onload = function(image) {
 			try {
 				if(!image) {
@@ -205,7 +205,8 @@ $(document).ready(function() {
 			}
 
 		};
-		imageQR.src = qrurl;
+		//imageQR.src = qrurl;
+		imageQR.src = 'static/images/showqrcode.jpeg';
 	}, 'json');
 
 
