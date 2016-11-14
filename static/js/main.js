@@ -188,18 +188,18 @@ function generateShareImage() {
 	var canvas = document.getElementById("shareCanvas");
 	//canvas.width = screen.width;
 	//canvas.height = screen.height - 56;
-	//var imageBackground = document.getElementById("imageBackground");
-	//var imageBG = document.getElementById("imageBG");
+	var imageBackground = document.getElementById("imageBackground");
+	var imageBG = document.getElementById("imageBG");
 	
 	var imageQR = document.getElementById("imageQR");
-	//var imageBGWidth = 347/375*screen.width;
-	//var imageBGHeight = 336/347*imageBGWidth;
+	var imageBGWidth = 347/375*screen.width;
+	var imageBGHeight = 336/347*imageBGWidth;
 	var imageQRWidth = 160/375*screen.width;
 
 	var ctx = canvas.getContext("2d");
-	//ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
-	//ctx.drawImage(imageBG, (canvas.width - imageBGWidth) / 2, (canvas.height - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
-	ctx.drawImage(imageQR,  (canvas.width - imageQRWidth) / 2, (canvas.height - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+	ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
+	ctx.drawImage(imageBG, (canvas.width - imageBGWidth) / 2, (canvas.height - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
+	//ctx.drawImage(imageQR,  (canvas.width - imageQRWidth) / 2, (canvas.height - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 	var dataURL = canvas.toDataURL();
 	alert("dataURL = " + dataURL);
 	$('#imageResult').attr("src", dataURL);
