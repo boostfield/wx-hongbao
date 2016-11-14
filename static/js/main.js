@@ -193,7 +193,7 @@ $(document).ready(function() {
 				ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
 				ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
 
-				//ctx.drawImage(image,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+				ctx.drawImage(image,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 				var dataURL = canvas.toDataURL();
 				$('#imageResult').attr("src", dataURL);
 			}
@@ -201,7 +201,7 @@ $(document).ready(function() {
 
 			catch(err)
 			{
-				alert(error);
+				alert(err);
 			}
 
 		};
