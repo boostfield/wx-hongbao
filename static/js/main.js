@@ -184,14 +184,14 @@ $(document).ready(function() {
 
 			var canvasWidth = screen.width;
 			var canvasHeight = screen.height - 56;
-			var imageBGWidth = 325/375*screen.width;
+			var imageBGWidth = 325/375*canvasWidth;
 			var imageBGHeight = 336/325*imageBGWidth;
-			var imageQRWidth = 160/375*screen.width;
+			var imageQRWidth = 160/375*canvasWidth;
 
 			var ctx = canvas.getContext("2d");
 			//ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
 			ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasWidth - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
-			ctx.drawImage(img,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+			//ctx.drawImage(img,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 
 			var dataURL = canvas.toDataURL();
 			$('#imageResult').attr("src", dataURL);
