@@ -4,7 +4,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background: #f10a00;
+  background: #F10A00;
   font-family: "Microsoft YaHei";
   height: 100%;
   font-size: 20px;
@@ -92,7 +92,7 @@ body {
 #page-agent .agent-title {
   padding-top: 130px;
   text-align: center;
-  color: #ffdf5d;
+  color: #FFDF5D;
 }
 #page-agent .list-container {
   padding: 1em 1em 76px 1em;
@@ -106,7 +106,7 @@ body {
 }
 #page-agent .list-container .list-item {
   font-size: 0.9em;
-  color: #ffdf5d;
+  color: #FFDF5D;
   height: 40px;
   border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
 }
@@ -123,7 +123,7 @@ body {
 #page-agent .list-container .list-footer {
   text-align: center;
   font-size: 0.8em;
-  color: #ffdf5d;
+  color: #FFDF5D;
   padding: 1em;
 }
 #page-share #shareCanvas {
@@ -139,7 +139,7 @@ body {
   left: 50%;
   text-align: center;
   font-size: 0.8em;
-  color: #f10a00;
+  color: #F10A00;
   letter-spacing: 0px;
   line-height: 22px;
   -webkit-transform: translateX(-50%);
@@ -178,7 +178,7 @@ body {
   background-repeat: no-repeat;
 }
 .tabbar .tabbar-item.active {
-  color: #ffdf5d;
+  color: #FFDF5D;
 }
 #modal {
   display: none;

@@ -1,10 +1,10 @@
 URLS = {
 	getSign: "http://test.boostfield.com/api/jsapi/sign",
 	requestPay: "http://test.boostfield.com/api/pay",
-	getQRcode: "http://test.boostfield.com/api/share/qrcode",
+	getQRcode: "http://192.168.199.134:5000/share/qrcode",
 	debug: "http://test.boostfield.com/api/debug",
-	getLastIncome: "http://test.boostfield.com/api/income/last",
-	getAgentAccount: "http://test.boostfield.com/api/agent/account",
+	getLastIncome: "http://192.168.199.134:5000/income/last",
+	getAgentAccount: "http://192.168.199.134:5000/agent/account",
 	weixinQRcode: "https://mp.weixin.qq.com/cgi-bin/showqrcode"
 };
 
@@ -28,7 +28,7 @@ function randString() {
 }
 
 var currentPage = 0;
-var pageSize = 2;
+var pageSize = 10;
 function onPageLoaded() {
 	$.get(URLS.getSign, { url: window.location.href }, function(sign) {
 		console.log(sign);
@@ -122,7 +122,6 @@ $(document).ready(function() {
 	});
 
 	$('.list-footer').click(function () {
-		alert('click fotter');
 		$('.list-footer').text("加载中...");
 		$.get(URLS.getAgentAccount, { page: currentPage, pagesize: pageSize }, function(rsp) {
 			if (rsp.ret == "SUCCESS") {
@@ -138,8 +137,6 @@ $(document).ready(function() {
 				}else {
 					$('.list-footer').hide();
 				}
-			} else {
-				alert(JSON.stringify(rsp));
 			}
 		}, 'json');
 	});
@@ -204,7 +201,7 @@ $(document).ready(function() {
 
 			catch(err)
 			{
-				alert(err);
+				alert(err.message);
 			}
 
 		};

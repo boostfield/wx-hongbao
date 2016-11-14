@@ -211,7 +211,9 @@ def get_jsapi_sign():
     if url is None:
         return 'fuck you'
 
-    return json.dumps(weixin.get_jsapi_sign(url))
+    ret = weixin.get_jsapi_sign(url)
+    app.logger.info(ret)
+    return json.dumps(ret)
 
 def _build_order(openid, money, remote_addr):
     order = Message()
