@@ -5,7 +5,8 @@ URLS = {
 	debug: "http://test.boostfield.com/api/debug",
 	getLastIncome: "http://test.boostfield.com/api/income/last",
 	getAgentAccount: "http://test.boostfield.com/api/agent/account",
-	weixinQRcode: "https://mp.weixin.qq.com/cgi-bin/showqrcode"
+	weixinQRcode: "https://mp.weixin.qq.com/cgi-bin/showqrcode",
+	host: "http://test.boostfield.com"
 };
 
 function point2yuan(point) {
@@ -169,10 +170,9 @@ $(document).ready(function() {
 	$('#imageQR').attr("onload", "generateShareImage()");
 
 	$.get(URLS.getQRcode, function(rsp) {
-		var qrurl = URLS.weixinQRcode + '?ticket=' + rsp.ticket;
-		console.log(qrurl);
-
-		$('#imageQR').src = qrurl;
+		var qrUrl = URLS.host + '/static/qrcode/' + rsp.qrcode;
+		console.log(qrUrl);
+		$('#imageQR').src = qrUrl;
 	}, 'json');
 
 
