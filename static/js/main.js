@@ -201,7 +201,7 @@ $(document).ready(function() {
 
 			catch(err)
 			{
-				alert(err.message);
+				debug(err);
 			}
 
 		};
