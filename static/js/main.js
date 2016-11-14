@@ -51,23 +51,27 @@ function onPageLoaded() {
 function getLastIncome() {
 	$.get(URLS.getLastIncome, function(rsp) {
 		console.log(rsp);
+		$("#btnGetRedPack").prop("disabled",false);
 		if (rsp.msg == 'ok') {
 			$('#rollResult').text(point2yuan(rsp.money));
 			$('#modal').show();
 		} else {
+
 		}
 	}, 'json');
 }
 
 $(document).ready(function() {
 	$('#btnGetRedPack').click(function() {
+		console.log("btnGetRedPack clicked");
+		$(this).prop("disabled",true);
 		$.ajax({												  
 			url:URLS.requestPay,								  
 			type: 'POST',										  
 			data: JSON.stringify({ money: 1 }),					  
 			contentType: 'application/json; charset=utf-8',		  
 			dataType: 'json',									  
-			success: function(ticket) {							  
+			success: function(ticket) {
 				wx.chooseWXPay({								  
 					timestamp: ticket.timeStamp,				  
 					nonceStr: ticket.nonceStr,					  
@@ -75,27 +79,22 @@ $(document).ready(function() {
 					signType: ticket.signType,					  
 					paySign: ticket.paySign,					  
 					error: function(err) {						  
-						debug('error');							  
+						debug('error');
+						$("#btnGetRedPack").prop("disabled",false);
 					},											  
 					success: function(ret) {					  
 						console.log("pay success");				  
 						getLastIncome();						  
 					}											  
 				});												  
-			}});												  
+			},
+			error: function(jqXHR, textStatus, errorThrown) {
+				$("#btnGetRedPack").prop("disabled",false);
+			}});
 		
 		setTimeout('getLastIncome()', 1000);
 	});
 
-	$("#btn-get-qrcode").click(function() {
-		$.get(URLS.getQRcode, function(ticket) {
-			if (ticket.ret != 'SUCCESS') {
-				console.log(ticket.msg);
-				return;
-			}
-			window.location.href = "qrcode.html?ticket=" + encodeURI(ticket.ticket);
-		}, 'json');
-	});
 
 	$(".tabbar-item").click(function() {
 		$(this).addClass("active");
