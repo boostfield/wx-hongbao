@@ -1,8 +1,8 @@
 import xml.etree.ElementTree as ET
-import urllib.request
 import json
 import hashlib
-import ssl
+import urllib
+from httplib import HTTP
 from common import now_sec, randstr
 
 # == 由外部赋值 ==
@@ -21,8 +21,9 @@ WX_URL_WEB_AUTH_ACCESS_TOKEN = 'https://api.weixin.qq.com/sns/oauth2/access_toke
 WX_URL_MAKE_ORDER = 'https://api.mch.weixin.qq.com/pay/unifiedorder'
 WX_URL_SEND_REDPACK = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/sendredpack'
 WX_URL_GET_JSAPI_TICKET = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket'
-WX_URL_GET_QRCODE = 'https://api.weixin.qq.com/cgi-bin/qrcode/create'
+WX_URL_CREATE_QRCODE = 'https://api.weixin.qq.com/cgi-bin/qrcode/create'
 WX_URL_SHORTURL = 'https://api.weixin.qq.com/cgi-bin/shorturl'
+WX_URL_GET_QRCODE = 'https://mp.weixin.qq.com/cgi-bin/showqrcode'
 
 _access_token = {
         'token': None,
@@ -89,38 +90,6 @@ class Signer:
         sha1.update(s.encode('utf-8'))
         return sha1.hexdigest()
 
-class HTTP:
-    @classmethod
-    def get(cls, url, **kws):
-        return cls._req(url, kws)
-
-    @classmethod
-    def _query_str(cls, kw):
-        querys = ["{}={}".format(key, kw[key]) for key in kw]
-        return '&'.join(querys)
-
-    @classmethod
-    def _req(cls, url, args={}, data=None):
-        query = cls._query_str(args)
-        if query:
-            url += '?' + query
-
-        rsp = urllib.request.urlopen(url, data)
-        return rsp.read().decode('utf-8')
-
-    @classmethod
-    def post(cls, url, data, **kws):
-        if type(data) is str:
-            data = data.encode('utf-8')
-        return cls._req(url, kws, data)
-
-    @classmethod
-    def ssl_post(cls, url, data):
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-        context.load_cert_chain(ssl_cert_file, ssl_key_file)
-        rsp = urllib.request.urlopen(url, data, context=context)
-        return rsp.read().decode('utf-8')
-
 def _build_jsapi_sign(ticket, noncestr, timestamp, url):
     string = 'jsapi_ticket={}&noncestr={}&timestamp={}&url={}'.format(ticket, noncestr, timestamp, url)
     return Signer.sha1_sign(string)
@@ -170,7 +139,7 @@ def oauth2_url(redirect_uri):
             ('scope', 'snsapi_base'),
             ('state', 'STATE')
             )
-    return '{}?{}#wechat_redirect'.format(WX_URL_OAUTH2, urllib.parse.urlencode(params))
+    return '{}?{}#wechat_redirect'.format(WX_URL_OAUTH2, HTTP.urlencode(params))
 
 def make_order(order):
     result = HTTP.post(WX_URL_MAKE_ORDER, order.xml())
@@ -195,7 +164,7 @@ def get_unlimit_qrcode_ticket(arg):
                 }
             }
         }
-    rsp = HTTP.post(WX_URL_GET_QRCODE, json.dumps(args), access_token=get_access_token())
+    rsp = HTTP.post(WX_URL_CREATE_QRCODE, json.dumps(args), access_token=get_access_token())
     logger.info('get a unlimit qrcode, arg: %s, ret: %s', arg, rsp)
     rsp = json.loads(rsp)
     return rsp['ticket']
@@ -204,3 +173,12 @@ def url_to_short(url):
     data = dict(action='long2short', long_url=url)
     rsp = HTTP.post(WX_URL_SHORTURL, json.dumps(data), access_token=get_access_token())
     return json.loads(rsp)
+
+def dump_qrcode(ticket, path):
+    try:
+        file, rsp = HTTP.download(HTTP.joinurl(WX_URL_GET_QRCODE, ticket=ticket), path)
+    except urllib.error.HTTPError as err:
+        logger.warning('get qrcode: %s from weixin failed: %s', ticket, err)
+        return None
+    else:
+        return file

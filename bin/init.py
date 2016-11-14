@@ -5,11 +5,13 @@ import sys
 import urllib
 
 os.system('mkdir -p ../log')
+os.system('mkdir -p ../static/qrcode')
 cdir = os.path.dirname(os.path.abspath(__file__))
 homedir = os.path.join(cdir, '..')
 sys.path.append(homedir)
 import main
 import weixin
+
 
 main.init_db()
 os.system('lessc {}/static/style.less > {}/static/style.css'.format(homedir, homedir))

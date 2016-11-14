@@ -14,6 +14,7 @@ DATABASE = 'redpack-game.db'
 LOG_LEVEL = 'INFO'
 AGENT_SHARE_PERCENT = 0.05      # 代理提成点数
 REDPACK_MAX = 20000             # 红包最大金额
+REDPACK_MIN = 100             # 红包最小金额
 LOG_FORMAT = '[%(levelname)s] %(asctime)s [%(process)d:%(thread)d] [%(funcName)s@%(pathname)s:%(lineno)s]- %(message)s'
 SECRET_KEY = '4c7b0db408b0c1b4242337ade30120f1'
 WEIXIN_SSL_CERT_FILE = '/var/www/wx-test/apiclient_cert.pem'

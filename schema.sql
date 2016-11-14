@@ -4,6 +4,7 @@ CREATE TABLE user(
     openid TEXT NOT NULL,
 	agent INTEGER NULL,
     register_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	share_qrcode TEXT NULL,
 	FOREIGN KEY(agent) REFERENCES user(id)
 );
 

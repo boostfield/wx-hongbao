@@ -3,7 +3,6 @@
 import os
 import base
 import unittest
-import tempfile
 import json
 import main
 import service

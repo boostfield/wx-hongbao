@@ -12,6 +12,8 @@ from flask import Flask, request, redirect, session, g, abort
 app = Flask(__name__)
 app.config.from_pyfile('conf/config.py')
 app.config['CWD'] = os.path.dirname(os.path.abspath(__file__))
+app.config['STATIC_HOME'] = app.config['CWD'] + '/static'
+app.config['QRCODE_HOME'] = app.config['STATIC_HOME'] + '/qrcode'
 
 handler = FileHandler(app.config['CWD'] + '/' + app.config['LOG_FILE'])
 handler.setFormatter(Formatter(app.config['LOG_FORMAT']))
@@ -80,6 +82,7 @@ def weixin_oauth2_url():
 
 @app.before_request
 def before_request():
+    session['openid'] = 'oenW2wz47W1RisML5QijHzwRz34M'
     if not app.config['TESTING']:
         g.db = connect_db()
         service.db = g.db
@@ -162,8 +165,8 @@ def callback():
     reply_msg.ToUserName = msg.FromUserName
     reply_msg.FromUserName = msg.ToUserName
     reply_msg.CreateTime = now_sec()
-    reply_msg.MsgType = 'text'
-    reply_msg.Content = weixin_oauth2_url()
+    reply_msg.MsgType = 'image'
+    reply_msg.Content = app.config['AUTH2_SHORT_URL']
 
     return reply_msg.xml()
 
@@ -175,9 +178,17 @@ def get_user_share_qrcode():
 
     user = service.find_user(openid)
     rsp = dict(ret=SUCCESS, msg='ok')
-    rsp['ticket'] = weixin.get_unlimit_qrcode_ticket(user['id'])
-    app.logger.info(rsp)
-    
+    if not user['share_qrcode']:
+        qr_file = randstr()
+        ticket = weixin.get_unlimit_qrcode_ticket(user['id'])
+        if weixin.dump_qrcode('ticket', app.config['QRCODE_HOME'] + '/' + qr_file):
+            user['share_qrcode'] = qr_file
+            service.update_user(user)
+        else:
+            rsp = dict(ret=FAIL, msg='download qrcode failed')
+            return rsp
+            
+    rsp['qrcode'] = user['share_qrcode']
     return json.dumps(rsp)
 
 # 用户在网页端授权后回调至此位置

@@ -1,5 +1,5 @@
 __TABLE_COLUMNS = {
-    'user': ('id', 'openid', 'agent', 'register_time'),
+    'user': ('id', 'openid', 'agent', 'share_qrcode', 'register_time'),
     'login': ('id', 'openid', 'timestamp'),
     'user_pay': ('id', 'openid', 'money', 'trade_no', 'ip', 'state', 'prepay_id', 'error_msg', 'timestamp'),
     'sys_pay': ('id', 'openid', 'money', 'billno', 'user_pay_id', 'state', 'type', 'wx_billno', 'error_msg', 'timestamp'),
@@ -17,6 +17,11 @@ def find_user(openid):
     if row is None:
         return None
     return _inflate('user', row)
+
+def update_user(user):
+    args = (user['openid'], user['agent'], user['share_qrcode'], user['id'])
+    db.execute('UPDATE user SET openid=?, agent=?, share_qrcode=? WHERE id=?', args)
+    db.commit()
 
 def create_user(openid, agent=None):
     args = (openid, agent)
