@@ -204,7 +204,7 @@ $(document).ready(function() {
 
 			catch(err)
 			{
-				alert(error);
+				alert(err);
 			}
 
 		};
