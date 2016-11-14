@@ -184,8 +184,8 @@ function generateShareImage() {
 	var imageQRWidth = 160/375*screen.width;
 
 	var ctx = canvas.getContext("2d");
-	ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
-	ctx.drawImage(imageBG, (canvas.width - imageBGWidth) / 2, (canvas.height - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
+	//ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
+	//ctx.drawImage(imageBG, (canvas.width - imageBGWidth) / 2, (canvas.height - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
 	ctx.drawImage(imageQR,  (canvas.width - imageQRWidth) / 2, (canvas.height - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 	var dataURL = canvas.toDataURL();
 	alert("dataURL = " + dataURL);
