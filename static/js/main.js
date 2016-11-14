@@ -167,6 +167,9 @@ $(document).ready(function() {
 	canvas.height = screen.height - 56;
 
 	//$('#imageQR').attr("onload", "generateShareImage()");
+	$('#imageQR').one('load', function() {
+		generateShareImage();
+	});
 	$.get(URLS.getQRcode, function(rsp) {
 		var qrurl = URLS.weixinQRcode + '?ticket=' + rsp.ticket;
 		console.log(qrurl);
@@ -176,9 +179,7 @@ $(document).ready(function() {
 		$('#imageQR').attr("src", qrurl);
 	}, 'json');
 
-	$(window).load(function (){
-		generateShareImage();
-	});
+
 });
 
 
