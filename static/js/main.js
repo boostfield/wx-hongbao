@@ -181,12 +181,10 @@ $(document).ready(function() {
 });
 
 
-function generateShareImage(image) {
+function generateShareImage() {
 	try {
 		alert("generateShareImage");
-		if(!image) {
-			image = this;
-		}
+
 		var canvas = document.getElementById("shareCanvas");
 		canvas.width = screen.width;
 		canvas.height = screen.height - 56;
