@@ -195,9 +195,8 @@ def get_unlimit_qrcode_ticket(arg):
                 }
             }
         }
-    logger.debug(args)
     rsp = HTTP.post(WX_URL_GET_QRCODE, json.dumps(args), access_token=get_access_token())
-    logger.debug('get a unlimit qrcode, arg: %s, ret: %s', arg, rsp)
+    logger.info('get a unlimit qrcode, arg: %s, ret: %s', arg, rsp)
     rsp = json.loads(rsp)
     return rsp['ticket']
 

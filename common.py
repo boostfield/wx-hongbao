@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 import uuid
 
 def now():
@@ -9,3 +10,6 @@ def now_sec():
 
 def randstr(len=32):
     return uuid.uuid4().hex[:len]
+
+def fmt_timestamp(time, fmt):
+    return datetime.fromtimestamp(time).strftime(fmt)

@@ -1,13 +1,13 @@
 from __future__ import print_function
 import os
+import json
 import sqlite3
+import strategy
+import service
 from datetime import datetime
 from logging import Formatter, FileHandler
-import json
 from common import randstr, now_sec
 from flask import Flask, request, redirect, session, g, abort
-import service
-import restitution_counter
 
 app = Flask(__name__)
 app.config.from_pyfile('conf/config.py')
@@ -17,6 +17,7 @@ handler = FileHandler(app.config['CWD'] + '/' + app.config['LOG_FILE'])
 handler.setFormatter(Formatter(app.config['LOG_FORMAT']))
 app.logger.addHandler(handler)
 app.logger.setLevel(app.config['LOG_LEVEL'])
+strategy.logger = app.logger
 
 import weixin
 from weixin import Message
@@ -47,7 +48,7 @@ def create_menu():
         'button': [{
             'type': 'view',
             'name': '开始游戏',
-            'url': app.config['WEB_ROOT']
+            'url': app.config['AUTH2_SHORT_URL']
         }]}
     rsp = weixin.create_menu(menu)
     app.logger.info('create menu return: %s', rsp['errmsg'])
@@ -139,13 +140,14 @@ def _handle_unsubscribe(msg):
     return SUCCESS
 
 def _handle_scan(msg):
-    agent = _get_agent(msg.EventKey)
+    agent = int(msg.EventKey)
     app.logger.info('user %s scan qrcode own by user: %d', msg.FromUserName)
     service.save_event(msg.FromUserName, msg.Event, agent)
     return SUCCESS
     
 @app.route('/callback', methods=['POST'])
 def callback():
+    app.logger.info(request.data)
     msg = Message(request.data)
     if msg.MsgType == 'event':
         if msg.Event == 'subscribe':
@@ -167,8 +169,7 @@ def callback():
 
 @app.route('/share/qrcode')
 def get_user_share_qrcode():
-    #openid = session.get('openid')
-    openid = 'oenW2wz47W1RisML5QijHzwRz34M'#session.get('openid')
+    openid = session.get('openid')
     if not openid:
         return redirect(weixin_oauth2_url())
 
@@ -211,9 +212,7 @@ def get_jsapi_sign():
     if url is None:
         return 'fuck you'
 
-    ret = weixin.get_jsapi_sign(url)
-    app.logger.info(ret)
-    return json.dumps(ret)
+    return json.dumps(weixin.get_jsapi_sign(url))
 
 def _build_order(openid, money, remote_addr):
     order = Message()
@@ -230,13 +229,8 @@ def _build_order(openid, money, remote_addr):
     order.sign()
     return order
 
-def _decide_repack_money(openid):
-    strategy = app.config['RESTITUTION_STRATEGY']
-    history = service.find_user_bill(openid)
-    return restitution_counter.count(strategy, history)
-
-def _send_redpack(openid, user_pay_id):
-    money = _decide_repack_money(openid)
+def _send_redpack(openid, user_pay_id, money):
+    money = strategy.get_strategy().pay(openid, money)
     redpack = Message()
     redpack.nonce_str = randstr()
     redpack.mch_billno = build_mch_billno()
@@ -320,7 +314,7 @@ def process_pay_result():
     service.update_user_pay(pay)
 
     # send redpack to user
-    _send_redpack(openid, pay['id'])
+    _send_redpack(openid, pay['id'], pay['money'])
     return reply.xml()
 
 @app.route('/pay', methods=['POST'])
@@ -377,7 +371,7 @@ def receive_tax():
 
 @app.route('/income/last')
 def get_user_last_income():
-    openid = 'oenW2wz47W1RisML5QijHzwRz34M'#session.get('openid')
+    openid = session.get('openid')
     if openid is None:
         return redirect(weixin_oauth2_url())
 
@@ -392,7 +386,7 @@ def get_user_last_income():
 
 @app.route('/agent/account')
 def get_user_account_detail_as_agent():
-    openid = 'oenW2wz47W1RisML5QijHzwRz34M'#session.get('openid')
+    openid = session.get('openid')
     if openid is None:
         return redirect(weixin_oauth2_url())
     # todo: 检查参数中是否仅包含数字

@@ -68,6 +68,7 @@ def save_shares(profits, sys_pay_id):
     for p in profits:
         service.save_share(p['user_pay_id'], sys_pay_id, main.shared_money(p['money']))
         
+# 处理一个 agent 的分红
 def settlement(agent, profits):
     fee = 0
     profits_in_one_share = []
@@ -80,13 +81,17 @@ def settlement(agent, profits):
             fee = 0
         fee += share
         profits_in_one_share.append(p)
-    sys_pay = _share(p['agent_openid'], fee, p['user_pay_id'])
-    save_shares(profits_in_one_share, sys_pay['id'])
+
+    if fee > app.config['REDPACK_MIN']:
+        sys_pay = _share(p['agent_openid'], fee, p['user_pay_id'])
+        save_shares(profits_in_one_share, sys_pay['id'])
         
-service.db = main.connect_db()
-app.logger.info('share profit run')
-weixin.ssl_cert_file = './apiclient_cert.pem'
-weixin.ssl_key_file = './apiclient_key.pem'
-profit = service.find_unshared_profit()
-for k, g in groupby(profit, lambda x: x['agent']):
-    settlement(k, g)
+
+if __name__ == '__main__':
+    service.db = main.connect_db()
+    weixin.ssl_cert_file = './apiclient_cert.pem'
+    weixin.ssl_key_file = './apiclient_key.pem'
+    profit = service.find_unshared_profit()
+
+    for k, g in groupby(profit, lambda x: x['agent']):
+        settlement(k, g)

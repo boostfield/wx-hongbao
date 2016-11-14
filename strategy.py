@@ -1,5 +1,6 @@
 import json
 import logging
+from logging import StreamHandler, Formatter
 from random import choice, randint
 from itertools import groupby
 from datetime import datetime
@@ -8,13 +9,36 @@ from common import now, now_sec
 
 def _default_logger():
     logger = logging.Logger(__name__)
-    logger.addHandler(logging.StreamHandler())
+    handler = StreamHandler()
+    handler.setFormatter(Formatter('[%(levelname)s] %(asctime)s [%(process)d:%(thread)d] [%(funcName)s@%(pathname)s:%(lineno)s]- %(message)s'))
+    logger.addHandler(handler)
+    return logger
 
 logger = _default_logger()
 
 STRATEGY_FILES_HOME = './strategies'
 STRATEGY_FILES_SUFFIX = '.json'
 STRATEGY_REFREASH_INTERVAL = 120 # 重新加载策略的间隔时间（分钟）
+TIMESTAMP_FMT = '%Y-%m-%d %H:%M:%S'
+
+CONFIG_DEFAULT_VALUE = {
+    "enable": True,
+    "priority": 2,
+    "goal": "gain",
+    "gain_rate": 5,
+    "loss_limit": 3000,
+    "min_redpack": 100,
+    "max_redpack": 20000,
+    "miss_limit": 5,
+    "win_limit": 2,
+    "custom": {
+        "detail":[],
+        "default": []
+    }
+}
+
+def get_strategy():
+    return StrategyManager.get_strategy()
 
 class StrategyManager:
     strategy_manager = None
@@ -45,6 +69,9 @@ class StrategyManager:
             logger.info("new strategy: %s started", self._current_strategy.name)
         return self._current_strategy            
 
+    def add(self, stg):
+        self.strategies.append(stg)
+
     def _load_strategies(self):
         logger.info('load strategies')
         self.strategy_files = self._find_strategy_files()
@@ -53,10 +80,10 @@ class StrategyManager:
             
     def _find_strategy_files(self):
         path = Path(STRATEGY_FILES_HOME)
-        return [p.path for p in path.iterdir() if p.is_file() and p.suffix == STRATEGY_FILES_SUFFIX]
+        return [str(p) for p in path.iterdir() if p.is_file() and p.suffix == STRATEGY_FILES_SUFFIX]
             
     def _strategies_old(self):
-        return self._load_strategies_time + STRATEGY_REFREASH_INTERVAL * 60 >= now_sec()
+        return self._load_strategies_time + STRATEGY_REFREASH_INTERVAL * 60 <= now_sec()
     
     def _find_strategy(self):
         if self._strategies_old():
@@ -70,25 +97,14 @@ class StrategyManager:
             if len(same_prioriby_strategies) > 0:
                 return choice(same_prioriby_strategies)
 
-        return Strategy.default
+        return Strategy.default()
 
-CONFIG_DEFAULT_VALUE = {
-    "enable": True,
-    "priority": 2,
-    "goal": "gain",
-    "gain_rate": 5,
-    "loss_limit": 3000,
-    "min_redpack": 100,
-    "max_redpack": 20000,
-    "miss_limit": 5,
-    "win_limit": 2,
-    "custom": {
-        "default": []
-    }
-}
 
 class Strategy:
-    default = {}                # todo
+    @classmethod
+    def default(cls):
+        return Strategy(CONFIG_DEFAULT_VALUE)
+    
     def __init__(self, cfg):
         if isinstance(cfg, dict):
             self.config = cfg
@@ -111,20 +127,36 @@ class Strategy:
         self._users_history = {}
 
     def start_at(self):
+        if not self.start_time:
+            return None
+        
         return self._fmt_timestamp(self.start_time)
 
     def stop_at(self):
+        if not self.stop_time:
+            return None
+        
         return self._fmt_timestamp(self.stop_time)
 
     def duration(self):
+        if not self.start_time:
+            return 0
+
+        if not self.stop_time:
+            return (now_sec() - self.start_time) // 60
+        
         return (self.stop_time - self.start_time) // 60
     
     def is_available(self):
         _now = now_sec()
+        if _now >= self._disable_time():
+            return False
+
         if self.started:
-            return self.start_time + self.config['duration'] * 60 < _now and _now < self._disable_time()
+            if 'duration' in self.config:
+                return self.start_time + self.config['duration'] * 60 > _now
         
-        if self.config['enable'] and _now > self._available_time() and _now < self._disable_time():
+        if self.config['enable'] and _now > self._available_time():
             return True
         return False
     
@@ -155,13 +187,13 @@ class Strategy:
         return pay
 
     def net_profit(self):
-        return self.total_income - total_pay
+        return self.total_income - self.total_pay
 
     ###################
     # private methods #
     ###################
     def _fmt_timestamp(self, time):
-        return datetime.fromtimestamp(time).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.fromtimestamp(time).strftime(TIMESTAMP_FMT)
     
     def _check_config(self):
         # todo
@@ -170,24 +202,25 @@ class Strategy:
     def _available_time(self):
         if 'available_time' not in self.config:
             return int(datetime.min.timestamp())
-        return int(datetime.strptime(self.config['available_time'], '%Y-%m-%d %H:%M:%S').timestamp())
+        return int(datetime.strptime(self.config['available_time'], TIMESTAMP_FMT).timestamp())
     
     def _disable_time(self):
         if 'disable_time' not in self.config:
             return int(datetime.max.timestamp())
-        return int(datetime.strptime(self.config['disable_time'], '%Y-%m-%d %H:%M:%S').timestamp())
+        return int(datetime.strptime(self.config['disable_time'], TIMESTAMP_FMT).timestamp())
 
     def _fill_config_default(self):
         for k, v in CONFIG_DEFAULT_VALUE.items():
             self.config.setdefault(k, v)
         self.config['custom'].setdefault('default', CONFIG_DEFAULT_VALUE['custom']['default'])
+        self.config['custom'].setdefault('detail', CONFIG_DEFAULT_VALUE['custom']['detail'])
     
     def _find_history(self, openid):
         history = self._users_history.get(openid)
         if not history:
             history = UserHistory(openid)
-            history.index = self._user_num
-            self._user_num += 1
+            history.index = self.user_num
+            self.user_num += 1
             self._users_history[openid] = history
         return history
         
@@ -200,8 +233,8 @@ class Strategy:
     def _rand_pay(self, income, _range):
         """ 在区间中随机选取中间金额 """
         pay = randint(_range[0], _range[1]) * income // 100
-        pay = max(self.config['min_redpack'][0], pay)
-        pay = min(pay, self.config['max_redpack'][1])
+        pay = max(self.config['min_redpack'], pay)
+        pay = min(pay, self.config['max_redpack'])
         return pay
 
     def _rand_money(self, income, low, high=None):
@@ -211,7 +244,10 @@ class Strategy:
         else: _high = max(min(int(income * high), self.config['max_redpack']), self.config['min_redpack'])
         return randint(_low, _high)
             
-        
+    def _get_filename(self, path):
+        p = Path(path)
+        return p.name[:-len(p.suffix)]
+
     def _global_pay(self, openid, income):
         """ 统筹全局决定返现金额 """
         history = self._find_history(openid)
@@ -242,8 +278,6 @@ class Strategy:
                     return self._rand_money(income, 0.5, 0.8)
                 else:
                     return self._rand_money(income, 0.5, 0.8)
-    
-        
         
 class UserHistory:
     def __init__(self, openid):
@@ -252,13 +286,13 @@ class UserHistory:
         self.play_times = 0     # 抽奖次数
         self.history = []
 
-    def append(income, pay):
+    def append(self, income, pay):
         self.history.append((income, pay, now_sec()))
 
     def continue_win_times(self):
         result = 0
-        for h in self.history[-1::-1]:
-            if h[pay] >= h[income]:
+        for (income, pay, time) in self.history[-1::-1]:
+            if pay >= income:
                 result += 1
             else:
                 break;
@@ -266,15 +300,9 @@ class UserHistory:
 
     def continue_miss_times(self):
         result = 0
-        for h in self.history[-1::-1]:
-            if h[pay] < h[income]:
+        for (income, pay, time) in self.history[-1::-1]:
+            if pay < income:
                 result += 1
             else:
                 break;
         return result
-
-    def _get_filename(self, path):
-        p = Path(path)
-        return p.name[:-len(p.suffix)]
-
-strategy = StrategyManager.get_manager().get_strategy()

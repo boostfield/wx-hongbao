@@ -12,7 +12,6 @@ import main
 import weixin
 
 main.init_db()
-main.create_menu()
 os.system('lessc {}/static/style.less > {}/static/style.css'.format(homedir, homedir))
 
 # 获取主页短链接
@@ -21,6 +20,8 @@ print('get short url return: ' + url['errmsg'])
 if url['errcode'] != 0:
     exit(1)
 os.system("sed -i '/AUTH2_SHORT_URL/c\AUTH2_SHORT_URL = \"{}\"\' {}/{}".format(url['short_url'], homedir, '/conf/config.py'))
+
+main.create_menu()
 
 # 获取主页二维码
 qrcode_url = 'http://qr.topscan.com/api.php?' + urllib.parse.urlencode({'text': url['short_url']})
