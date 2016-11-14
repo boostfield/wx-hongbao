@@ -1,10 +1,10 @@
 URLS = {
 	getSign: "http://test.boostfield.com/api/jsapi/sign",
 	requestPay: "http://test.boostfield.com/api/pay",
-	getQRcode: "http://192.168.199.134:5000/share/qrcode",
+	getQRcode: "http://test.boostfield.com/api/share/qrcode",
 	debug: "http://test.boostfield.com/api/debug",
-	getLastIncome: "http://192.168.199.134:5000/income/last",
-	getAgentAccount: "http://192.168.199.134:5000/agent/account",
+	getLastIncome: "http://test.boostfield.com/api/income/last",
+	getAgentAccount: "http://test.boostfield.com/api/agent/account",
 	weixinQRcode: "https://mp.weixin.qq.com/cgi-bin/showqrcode"
 };
 
