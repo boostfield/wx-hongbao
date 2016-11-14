@@ -172,7 +172,7 @@ $(document).ready(function() {
 		console.log(qrurl);
 		alert("qrurl " + qrurl);
 		//todo for test only
-		$('#imageResult').src = qrurl;
+		$('#imageResult').attr("src", qrurl);
 		//$('#imageQR').attr("onload", "generateShareImage()");
 		//$('#imageQR').attr("src", qrurl);
 	}, 'json');
