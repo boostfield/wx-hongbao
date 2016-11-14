@@ -145,6 +145,10 @@ body {
   -webkit-transform: translateX(-50%);
   transform: translateX(-50%);
 }
+#page-share #imageResult {
+  width: 100%;
+  height: 100%;
+}
 .tabbar {
   height: 56px;
   position: fixed;
