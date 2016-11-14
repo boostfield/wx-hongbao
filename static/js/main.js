@@ -170,16 +170,29 @@ $(document).ready(function() {
 	canvas.height = screen.height - 56;
 
 	//$('#imageQR').attr("onload", "generateShareImage()");
-	$('#imageQR').one('load', function() {
-		generateShareImage();
-	});
+
 	$.get(URLS.getQRcode, function(rsp) {
 		var qrurl = URLS.weixinQRcode + '?ticket=' + rsp.ticket;
 		console.log(qrurl);
-		//todo for test only
-		//$('#imageResult').attr("src", qrurl);
+		var image = new Image();
+		image.onload=function() {
+			var canvas = document.getElementById("shareCanvas");
+			var imageBackground = document.getElementById("imageBackground");
+			var imageBG = document.getElementById("imageBG");
 
-		$('#imageQR').attr("src", qrurl);
+			var imageBGWidth = 325/375*screen.width;
+			var imageBGHeight = 336/325*imageBGWidth;
+			var imageQRWidth = 160/375*screen.width;
+
+			var ctx = canvas.getContext("2d");
+			ctx.drawImage(imageBackground, 0, 0, canvas.width, canvas.height);
+			ctx.drawImage(imageBG, (canvas.width - imageBGWidth) / 2, (canvas.height - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
+			ctx.drawImage(image,  (canvas.width - imageQRWidth) / 2, (canvas.height - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+
+			var dataURL = canvas.toDataURL();
+			$('#imageResult').attr("src", dataURL);
+		};
+		image.src = qrurl;
 	}, 'json');
 
 
