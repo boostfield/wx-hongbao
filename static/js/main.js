@@ -171,6 +171,7 @@ $(document).ready(function() {
 
 
 function generateShareImage() {
+	alert("generateShareImage triggered!");
 	var canvas = document.getElementById("shareCanvas");
 	canvas.width = screen.width;
 	canvas.height = screen.height - 56;
@@ -187,6 +188,6 @@ function generateShareImage() {
 	ctx.drawImage(imageBG, (canvas.width - imageBGWidth) / 2, (canvas.height - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
 	ctx.drawImage(imageQR,  (canvas.width - imageQRWidth) / 2, (canvas.height - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 	var dataURL = canvas.toDataURL();
-
+	alert("dataURL = " + dataURL);
 	document.getElementById("imageResult").src = dataURL;
 }
