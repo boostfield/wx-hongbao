@@ -8,6 +8,7 @@ import json
 import main
 import service
 import weixin
+from common import now
 from base import anything
 
 FAIL = 'FAIL'
@@ -100,11 +101,11 @@ class TestCase(unittest.TestCase):
         user_pay = dict(openid=OPENID, money=4, trade_no='no4', ip='0.0.0.0', state='OK')
         service.save_user_pay(user_pay)
 
-        sys_pay = dict(openid=OPENID, money=1, billno='bill1', user_pay_id=1, state='OK', type='return')
+        sys_pay = dict(openid=OPENID, money=1, billno='bill1', user_pay_id=1, state='OK', type='RETURN')
         service.save_sys_pay(sys_pay)
-        sys_pay = dict(openid=OPENID, money=2, billno='bill2', user_pay_id=2, state='OK', type='return')
+        sys_pay = dict(openid=OPENID, money=2, billno='bill2', user_pay_id=2, state='OK', type='RETURN')
         service.save_sys_pay(sys_pay)
-        sys_pay = dict(openid=OPENID, money=3, billno='bill3', user_pay_id=3, state='OK', type='return')
+        sys_pay = dict(openid=OPENID, money=3, billno='bill3', user_pay_id=3, state='OK', type='RETURN')
         service.save_sys_pay(sys_pay)
 
         bill = service.find_user_bill(OPENID)
@@ -115,7 +116,7 @@ class TestCase(unittest.TestCase):
         msg = weixin.Message()
         msg.ToUserName = 'server'
         msg.FromUserName = OPENID
-        msg.CreateTime = weixin.now()
+        msg.CreateTime = now()
         msg.MsgType = 'event'
         msg.Event = 'subscribe'
 
@@ -136,7 +137,7 @@ class TestCase(unittest.TestCase):
         msg = weixin.Message()
         msg.ToUserName = 'server'
         msg.FromUserName = OPENID
-        msg.CreateTime = weixin.now()
+        msg.CreateTime = now()
         msg.MsgType = 'event'
         msg.Event = 'subscribe'
         msg.EventKey = 'qrscene_2'
@@ -173,7 +174,7 @@ class TestCase(unittest.TestCase):
         service.save_user_pay(user_pay)
         user_pay = dict(openid='user1', money=1000, trade_no='no4', ip='0.0.0.0', state='OK')
         service.save_user_pay(user_pay)
-        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='FAIL')
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=FAIL)
         service.save_user_pay(user_pay)
         user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='PREPAY')
         service.save_user_pay(user_pay)
@@ -188,9 +189,9 @@ class TestCase(unittest.TestCase):
         user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
         service.save_user_pay(user_pay)
 
-        sys_pay = dict(openid='user2', money=3, billno='bill3', state='OK', type='share')
+        sys_pay = dict(openid='user2', money=3, billno='bill3', state='OK', type='SHARE')
         service.save_sys_pay(sys_pay)
-        sys_pay = dict(openid='user2', money=3, billno='bill3', state='OK', type='share')
+        sys_pay = dict(openid='user2', money=3, billno='bill3', state='OK', type='SHARE')
         service.save_sys_pay(sys_pay)
 
         service.save_share(5, 1, 1)
@@ -221,7 +222,7 @@ class TestCase(unittest.TestCase):
         service.save_user_pay(user_pay)
         user_pay = dict(openid='user1', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
         service.save_user_pay(user_pay)
-        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='FAIL')
+        user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=FAIL)
         service.save_user_pay(user_pay)
         user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state='PREPAY')
         service.save_user_pay(user_pay)
@@ -236,9 +237,9 @@ class TestCase(unittest.TestCase):
         user_pay = dict(openid='user2', money=1000, trade_no='no4', ip='0.0.0.0', state=SUCCESS)
         service.save_user_pay(user_pay)
 
-        sys_pay = dict(openid='user2', money=50, billno='bill3', state='OK', type='share')
+        sys_pay = dict(openid='user2', money=50, billno='bill3', state='OK', type='SHARE')
         service.save_sys_pay(sys_pay)
-        sys_pay = dict(openid='user2', money=50, billno='bill3', state='OK', type='share')
+        sys_pay = dict(openid='user2', money=50, billno='bill3', state='OK', type='SHARE')
         service.save_sys_pay(sys_pay)
 
         service.save_share(5, 1, 50)
@@ -267,5 +268,51 @@ class TestCase(unittest.TestCase):
                           ])
         self.assertEqual(expect, rsp)
         
+    def test_find_user_last_income(self):
+        service.create_user(OPENID)
+        self.login(OPENID)
+
+        rsp = self.app.get('/income/last')
+        rsp = json.loads(rsp.data.decode('utf-8'))
+        self.assertEqual(None, rsp['money'])
+
+        sys_pay = dict(openid=OPENID, money=50, billno='bill3', state=SUCCESS, type='RETURN')
+        service.save_sys_pay(sys_pay)
+        rsp = self.app.get('/income/last')
+        rsp = json.loads(rsp.data.decode('utf-8'))
+        self.assertEqual(50, rsp['money'])
+
+        sys_pay = dict(openid=OPENID, money=100, billno='bill3', state=SUCCESS, type='SHARE')
+        service.save_sys_pay(sys_pay)
+        rsp = self.app.get('/income/last')
+        rsp = json.loads(rsp.data.decode('utf-8'))
+        self.assertEqual(50, rsp['money'])
+
+        sys_pay = dict(openid=OPENID, money=60, billno='bill3', state=FAIL, type='RETURN')
+        service.save_sys_pay(sys_pay)
+        rsp = self.app.get('/income/last')
+        rsp = json.loads(rsp.data.decode('utf-8'))
+        self.assertEqual(50, rsp['money'])
+
+    def test_weixin_check_sign(self):
+        msg = weixin.Message()
+        msg.appid = 'wx9fb7ef78c47f8ef2'
+        msg.bank_type = 'CFT'
+        msg.cash_fee = 1
+        msg.fee_type = 'CNY'
+        msg.is_subscribe = 'Y'
+        msg.mch_id = '1405637602'
+        msg.nonce_str = 'cde59accdf7f445d9a9aed0857731364'
+        msg.openid = 'oenW2wz47W1RisML5QijHzwRz34M'
+        msg.out_trade_no = '20161112162257357'
+        msg.result_code = 'SUCCESS'
+        msg.return_code = 'SUCCESS'
+        msg.time_end = '20161112162302'
+        msg.total_fee = 1
+        msg.trade_type = 'JSAPI'
+        msg.transaction_id = '4007282001201611129539346065'
+        msg.sign = '701DA5F1F043518ACA4B150BD0C38722'
+        self.assertTrue(msg.check_sign())
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,10 +1,9 @@
 import xml.etree.ElementTree as ET
 import urllib.request
 import json
-import uuid
 import hashlib
-import time
 import ssl
+from common import now_sec, randstr
 
 # == 由外部赋值 ==
 logger = None       
@@ -21,7 +20,7 @@ WX_URL_OAUTH2 = 'https://open.weixin.qq.com/connect/oauth2/authorize'
 WX_URL_WEB_AUTH_ACCESS_TOKEN = 'https://api.weixin.qq.com/sns/oauth2/access_token'
 WX_URL_MAKE_ORDER = 'https://api.mch.weixin.qq.com/pay/unifiedorder'
 WX_URL_SEND_REDPACK = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/sendredpack'
-WX_URL_GET_JSAPI_TICKET = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket' #?access_token=ACCESS_TOKEN&type=jsapi
+WX_URL_GET_JSAPI_TICKET = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket'
 WX_URL_GET_QRCODE = 'https://api.weixin.qq.com/cgi-bin/qrcode/create'
 WX_URL_SHORTURL = 'https://api.weixin.qq.com/cgi-bin/shorturl'
 
@@ -34,12 +33,6 @@ _jsapi_ticket = {
         'ticket': None,
         'timestamp': 0
         }
-
-def now():
-    return int(time.time()) 
-
-def randstr():
-    return uuid.uuid4().hex
 
 class Message:
     def _inflate(self, xml):
@@ -56,6 +49,15 @@ class Message:
 
     def sign(self):
         self.sign = Signer.signstr(self.__dict__)
+
+    def check_sign(self):
+        if 'sign' not in self or not self.sign:
+            return False
+        
+        _dict = self.__dict__.copy()
+        del _dict['sign']
+        return self.sign == Signer.signstr(_dict)
+            
 
     def xml(self):
         root = ET.Element('xml')
@@ -124,9 +126,9 @@ def _build_jsapi_sign(ticket, noncestr, timestamp, url):
     return Signer.sha1_sign(string)
 
 def get_access_token():
-    if _access_token['token'] is None or _access_token['timestamp'] + 7000 <= now():
+    if _access_token['token'] is None or _access_token['timestamp'] + 7000 <= now_sec():
         _access_token['token'] = json.loads(HTTP.get(WX_URL_GET_ACCESS_TOKEN, grant_type='client_credential', appid=APP_ID, secret=APP_SECRET))['access_token']
-        _access_token['timestamp'] = now()
+        _access_token['timestamp'] = now_sec()
         logger.info('access_token is: %s', _access_token['token'])
     return _access_token['token']
 
@@ -134,13 +136,13 @@ def get_web_auth_access_token(code):
     return json.loads(HTTP.get(WX_URL_WEB_AUTH_ACCESS_TOKEN, appid=APP_ID, secret=APP_SECRET, code=code, grant_type='authorization_code'))
 
 def get_jsapi_sign(url):
-    if _jsapi_ticket['ticket'] is None or _jsapi_ticket['timestamp'] + 7000 <= now():
+    if _jsapi_ticket['ticket'] is None or _jsapi_ticket['timestamp'] + 7000 <= now_sec():
         access_token = get_access_token()
         _jsapi_ticket['ticket'] = json.loads(HTTP.get(WX_URL_GET_JSAPI_TICKET, access_token=access_token, type='jsapi'))['ticket']
-        _jsapi_ticket['timestamp'] = now()
+        _jsapi_ticket['timestamp'] = now_sec()
 
     noncestr = randstr()
-    timestamp = now()
+    timestamp = now_sec()
     sign = _build_jsapi_sign(_jsapi_ticket['ticket'], noncestr, timestamp, url)
     return {
             'noncestr': noncestr,
@@ -152,7 +154,7 @@ def get_jsapi_sign(url):
 def get_pay_sign(prepay_id):
     sign_items = {
             'nonceStr': randstr(),
-            'timeStamp': str(now()),
+            'timeStamp': str(now_sec()),
             'package': 'prepay_id=' + prepay_id,
             'signType': 'MD5',
             'appId': APP_ID
