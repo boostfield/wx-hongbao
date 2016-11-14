@@ -172,6 +172,7 @@ $(document).ready(function() {
 	$.get(URLS.getQRcode, function(rsp) {
 		var qrUrl = URLS.host + '/qrcode/' + rsp.qrcode;
 		console.log(qrUrl);
+		alert(qrUrl);
 		$('#imageQR').src = qrUrl;
 	}, 'json');
 
