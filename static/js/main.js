@@ -167,9 +167,7 @@ $(document).ready(function() {
 	canvas.width = screen.width;
 	canvas.height = screen.height - 56;
 
-	$('#imageQR').load(function() {
-		generateShareImage();
-	});
+	$('#imageQR').attr('onload', 'generateShareImage()');
 
 	$.get(URLS.getQRcode, function(rsp) {
 		var qrUrl = URLS.host + '/qrcode/' + rsp.qrcode;
