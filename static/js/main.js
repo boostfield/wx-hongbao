@@ -205,8 +205,7 @@ $(document).ready(function() {
 			}
 
 		};
-		//imageQR.src = qrurl;
-		imageQR.src = 'images/showqrcode.jpeg';
+		imageQR.src = qrurl;
 	}, 'json');
 
 
