@@ -170,7 +170,7 @@ $(document).ready(function() {
 	$('#imageQR').attr("onload", "generateShareImage()");
 
 	$.get(URLS.getQRcode, function(rsp) {
-		var qrUrl = URLS.host + '/static/qrcode/' + rsp.qrcode;
+		var qrUrl = URLS.host + '/qrcode/' + rsp.qrcode;
 		console.log(qrUrl);
 		$('#imageQR').src = qrUrl;
 	}, 'json');
