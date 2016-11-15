@@ -9,8 +9,7 @@ body {
   height: 100%;
   font-size: 20px;
 }
-p,
-span {
+* {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
