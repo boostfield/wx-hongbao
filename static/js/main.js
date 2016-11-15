@@ -75,7 +75,7 @@ $(document).ready(function() {
 		$.ajax({												  
 			url:URLS.requestPay,								  
 			type: 'POST',										  
-			data: JSON.stringify({ money: 1 }),					  
+			data: JSON.stringify({ money: 100 }),
 			contentType: 'application/json; charset=utf-8',		  
 			dataType: 'json',									  
 			success: function(ticket) {
@@ -91,7 +91,7 @@ $(document).ready(function() {
 					},											  
 					success: function(ret) {					  
 						console.log("pay success");				  
-						
+
 						setTimeout('getLastIncome()', 1000);
 					}											  
 				});												  
