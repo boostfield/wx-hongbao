@@ -177,9 +177,9 @@ function generateShareImage() {
 	try {
 		var canvas = document.getElementById("shareCanvas");
 		var ctx = canvas.getContext("2d");
-		var ratio = getPixelRatio(ctx);
+		//var ratio = getPixelRatio(ctx);
 		canvas.width = screen.availWidth*1;
-		canvas.height = (screen.availHeight - 56)*ratio;
+		canvas.height = (screen.availHeight - 56)*1;
 		var imageBackground = document.getElementById("imageBackground");
 		var imageBG = document.getElementById("imageBG");
 		var imageQR = document.getElementById("imageQR");
@@ -199,7 +199,7 @@ function generateShareImage() {
 
 		var dataURL = canvas.toDataURL();
 		imageResult.src = dataURL;
-		alert("radio = " + ratio + " canvasHeight = " + canvasHeight + " canvasWidth= " + canvasWidth + " imageResult.height= " + imageResult.height);
+		//alert("radio = " + ratio + " canvasHeight = " + canvasHeight + " canvasWidth= " + canvasWidth + " imageResult.height= " + imageResult.height);
 	}
 
 
