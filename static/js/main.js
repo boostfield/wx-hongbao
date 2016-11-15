@@ -199,8 +199,8 @@ function generateShareImage() {
 		var ctx = canvas.getContext("2d");
 		var ratio = getPixelRatio(ctx);
 		ctx.drawImage(imageBackground, 0, 0, canvasWidth*ratio, canvasHeight*ratio);
-		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2*ratio, (canvasHeight - imageBGHeight) / 2*ratio, imageBGWidth*ratio, imageBGHeight*ratio);
-		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2*ratio, (canvasHeight - imageQRWidth) / 2*ratio, imageQRWidth*ratio, imageQRWidth*ratio);
+		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth*ratio, imageBGHeight*ratio);
+		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth*ratio, imageQRWidth*ratio);
 
 		var dataURL = canvas.toDataURL();
 		imageResult.src = dataURL;
