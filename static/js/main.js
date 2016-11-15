@@ -170,13 +170,6 @@ $(document).ready(function() {
 	}, 'json');
 
 
-	var canvas = document.getElementById("shareCanvas");
-	canvas.width = screen.width;
-	canvas.height = screen.height - 56;
-
-
-
-
 });
 
 
