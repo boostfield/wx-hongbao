@@ -216,8 +216,10 @@ function getPixelRatio(context) {
 			context.oBackingStorePixelRatio ||
 			context.backingStorePixelRatio ||
 			1;
-	if(backingStore > 2) {
-		backingStore = 2;
+
+	var ratio =  (window.devicePixelRatio || 1) / backingStore;
+	if(ratio > 2) {
+		ratio = 2;
 	}
-	return (window.devicePixelRatio || 1) / backingStore;
+	return ratio;
 }
