@@ -199,7 +199,7 @@ function generateShareImage() {
 
 		var dataURL = canvas.toDataURL();
 		imageResult.src = dataURL;
-		alert("radio = " + ratio + " canvasHeight = " + canvasHeight + " canvasWidth= " + canvasWidth);
+		alert("radio = " + ratio + " canvasHeight = " + canvasHeight + " canvasWidth= " + canvasWidth + " imageResult.height= " + imageResult.height);
 	}
 
 
