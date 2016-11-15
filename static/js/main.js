@@ -62,7 +62,7 @@ function getLastIncome() {
 		if (rsp.msg == 'ok') {
 			$('#rollResult').text(point2yuan(rsp.money));
 			$('#modal').show();
-			refreshHistory();
+			prependLatestHistory(rsp.money, rsp.time);
 		} else {
 
 		}
@@ -226,13 +226,6 @@ function getPixelRatio(context) {
 }
 
 
-function refreshHistory() {
-	$.get(URLS.getAgentAccount, { page: 0, pagesize: 1 }, function(rsp) {
-		if (rsp.ret == "SUCCESS") {
-			$.each(rsp.bills, function(i, bill) {
-				$('div.list-content').prepend(newListContent(bill.income, bill.time));
-			});
-
-		}
-	}, 'json');
+function prependLatestHistory(money, time) {
+	$('div.list-content').prepend(newListContent(money, time));
 }
