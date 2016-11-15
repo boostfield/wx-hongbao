@@ -62,6 +62,7 @@ function getLastIncome() {
 		if (rsp.msg == 'ok') {
 			$('#rollResult').text(point2yuan(rsp.money));
 			$('#modal').show();
+			refreshHistory();
 		} else {
 
 		}
@@ -222,4 +223,16 @@ function getPixelRatio(context) {
 		ratio = 2;
 	}
 	return ratio;
+}
+
+
+function refreshHistory() {
+	$.get(URLS.getAgentAccount, { page: 0, pagesize: 1 }, function(rsp) {
+		if (rsp.ret == "SUCCESS") {
+			$.each(rsp.bills, function(i, bill) {
+				$('div.list-content').prepend(newListContent(bill.income, bill.time));
+			});
+
+		}
+	}, 'json');
 }
