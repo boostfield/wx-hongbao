@@ -154,7 +154,7 @@ body {
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
-  padding: 0 10px;
+  padding: 0;
 }
 .tabbar .tabbar-item {
   float: left;

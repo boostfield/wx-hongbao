@@ -190,8 +190,8 @@ function generateShareImage() {
 		var imageResult = document.getElementById("imageResult");
 		var canvasWidth = screen.width;
 		var canvasHeight = screen.height - 56;
-		var imageBGWidth = 325/375*canvasWidth;
-		var imageBGHeight = 336/325*imageBGWidth;
+		var imageBGWidth = 347/375*canvasWidth;
+		var imageBGHeight = 386/347*imageBGWidth;
 		var imageQRWidth = 160/375*canvasWidth;
 
 		var ctx = canvas.getContext("2d");
