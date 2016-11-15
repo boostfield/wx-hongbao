@@ -228,6 +228,7 @@ function getPixelRatio(context) {
 
 function refreshHistory() {
 	$.get(URLS.getAgentAccount, { page: 0, pagesize: 1 }, function(rsp) {
+		alert(JSON.stringify(rsp));
 		if (rsp.ret == "SUCCESS") {
 			$.each(rsp.bills, function(i, bill) {
 				$('div.list-content').prepend(newListContent(bill.income, bill.time));
