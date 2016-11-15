@@ -180,8 +180,8 @@ $(document).ready(function() {
 function generateShareImage() {
 	try {
 		var canvas = document.getElementById("shareCanvas");
-		canvas.width = screen.width;
-		canvas.height = screen.height - 56;
+		//canvas.width = screen.width;
+		//canvas.height = screen.height - 56;
 		var imageBackground = document.getElementById("imageBackground");
 		var imageBG = document.getElementById("imageBG");
 		var imageQR = document.getElementById("imageQR");
@@ -194,7 +194,7 @@ function generateShareImage() {
 		var ctx = canvas.getContext("2d");
 		ctx.drawImage(imageBackground, 0, 0, canvasWidth, canvasHeight);
 		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
-		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+		//ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 
 		var dataURL = canvas.toDataURL();
 		$('#imageResult').attr("src", dataURL);
