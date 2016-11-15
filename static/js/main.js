@@ -195,10 +195,12 @@ function generateShareImage() {
 		var imageBGHeight = 386/347*imageBGWidth;
 		var imageQRWidth = 160/375*canvasWidth;
 
+
 		var ctx = canvas.getContext("2d");
-		ctx.drawImage(imageBackground, 0, 0, canvasWidth, canvasHeight);
-		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
-		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
+		var ratio = getPixelRatio(ctx);
+		ctx.drawImage(imageBackground, 0, 0, canvasWidth*ratio, canvasHeight*ratio);
+		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2*ratio, (canvasHeight - imageBGHeight) / 2*ratio, imageBGWidth*ratio, imageBGHeight*ratio);
+		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2*ratio, (canvasHeight - imageQRWidth) / 2*ratio, imageQRWidth*ratio, imageQRWidth*ratio);
 
 		var dataURL = canvas.toDataURL();
 		imageResult.src = dataURL;
@@ -209,4 +211,14 @@ function generateShareImage() {
 	{
 		alert(err.message);
 	}
+}
+
+function getPixelRatio(context) {
+	var backingStore = context.backingStorePixelRatio ||
+			context.webkitBackingStorePixelRatio ||
+			context.msBackingStorePixelRatio ||
+			context.oBackingStorePixelRatio ||
+			context.backingStorePixelRatio ||
+			1;
+	return (window.devicePixelRatio || 1) / backingStore;
 }
