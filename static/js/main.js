@@ -178,8 +178,8 @@ function generateShareImage() {
 		var canvas = document.getElementById("shareCanvas");
 		var ctx = canvas.getContext("2d");
 		var ratio = getPixelRatio(ctx);
-		canvas.width = screen.width*ratio;
-		canvas.height = (screen.height - 56)*ratio;
+		canvas.width = screen.availWidth*ratio;
+		canvas.height = (screen.availHeight - 56)*ratio;
 		var imageBackground = document.getElementById("imageBackground");
 		var imageBG = document.getElementById("imageBG");
 		var imageQR = document.getElementById("imageQR");
