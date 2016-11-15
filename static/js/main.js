@@ -177,7 +177,7 @@ function generateShareImage() {
 	try {
 		var canvas = document.getElementById("shareCanvas");
 		var ctx = canvas.getContext("2d");
-		var ratio = getPixelRatio(ctx);
+		var ratio = 1;
 		canvas.width = screen.width*ratio;
 		canvas.height = (screen.height - 56)*ratio;
 		var imageBackground = document.getElementById("imageBackground");
