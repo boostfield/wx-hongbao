@@ -91,7 +91,8 @@ $(document).ready(function() {
 					},											  
 					success: function(ret) {					  
 						console.log("pay success");				  
-						getLastIncome();						  
+						
+						setTimeout('getLastIncome()', 1000);
 					}											  
 				});												  
 			},
@@ -99,7 +100,7 @@ $(document).ready(function() {
 				$("#btnGetRedPack").prop("disabled",false);
 			}});
 		
-		setTimeout('getLastIncome()', 1000);
+
 	});
 
 
