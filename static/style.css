@@ -138,6 +138,11 @@ span {
 #page-share .imgContianer {
   display: none;
 }
+#page-share #imageResult {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 #page-share p {
   position: absolute;
   bottom: 62px;
