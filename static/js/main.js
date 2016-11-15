@@ -194,11 +194,12 @@ function generateShareImage() {
 
 
 		ctx.drawImage(imageBackground, 0, 0, canvasWidth, canvasHeight);
-		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2 - 50, imageBGWidth, imageBGHeight);
-		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2 - 50, imageQRWidth, imageQRWidth);
+		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2 - 70, imageBGWidth, imageBGHeight);
+		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2 - 70, imageQRWidth, imageQRWidth);
 
 		var dataURL = canvas.toDataURL();
 		imageResult.src = dataURL;
+		alert("canvasHeight = " + canvasHeight);
 	}
 
 
