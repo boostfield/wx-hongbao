@@ -82,7 +82,6 @@ def weixin_oauth2_url():
 
 @app.before_request
 def before_request():
-    session['openid'] = 'oenW2wz47W1RisML5QijHzwRz34M'
     if not app.config['TESTING']:
         g.db = connect_db()
         service.db = g.db
@@ -177,18 +176,20 @@ def get_user_share_qrcode():
         return redirect(weixin_oauth2_url())
 
     user = service.find_user(openid)
+    app.logger.info(user)
     rsp = dict(ret=SUCCESS, msg='ok')
     if not user['share_qrcode']:
         qr_file = randstr()
         ticket = weixin.get_unlimit_qrcode_ticket(user['id'])
-        if weixin.dump_qrcode('ticket', app.config['QRCODE_HOME'] + '/' + qr_file):
+        if weixin.dump_qrcode(ticket, app.config['QRCODE_HOME'] + '/' + qr_file):
             user['share_qrcode'] = qr_file
             service.update_user(user)
         else:
             rsp = dict(ret=FAIL, msg='download qrcode failed')
-            return rsp
+            return json.dumps(rsp)
             
     rsp['qrcode'] = user['share_qrcode']
+    app.logger.info(rsp)
     return json.dumps(rsp)
 
 # 用户在网页端授权后回调至此位置

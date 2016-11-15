@@ -38,7 +38,7 @@ CONFIG_DEFAULT_VALUE = {
 }
 
 def get_strategy():
-    return StrategyManager.get_strategy()
+    return StrategyManager.get_manager().get_strategy()
 
 class StrategyManager:
     strategy_manager = None

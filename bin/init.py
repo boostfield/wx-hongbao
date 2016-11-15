@@ -5,6 +5,7 @@ import sys
 import urllib
 
 os.system('mkdir -p ../log')
+os.system('rm ../log/*')
 os.system('mkdir -p ../static/qrcode')
 cdir = os.path.dirname(os.path.abspath(__file__))
 homedir = os.path.join(cdir, '..')

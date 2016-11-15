@@ -27,4 +27,4 @@ RESTITUTION_STRATEGY = {
     ),
     'correction': (3, 2)
 }
-AUTH2_SHORT_URL = "http://w.url.cn/s/AdIxdYd"
+AUTH2_SHORT_URL = "http://w.url.cn/s/ARVmguN"
