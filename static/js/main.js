@@ -179,6 +179,7 @@ $(document).ready(function() {
 
 function generateShareImage() {
 	try {
+		alert("generateShareImage");
 		var canvas = document.getElementById("shareCanvas");
 		//canvas.width = screen.width;
 		//canvas.height = screen.height - 56;
