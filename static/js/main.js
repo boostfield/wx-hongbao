@@ -183,24 +183,26 @@ $(document).ready(function() {
 function generateShareImage() {
 	try {
 		var canvas = document.getElementById("shareCanvas");
-		canvas.width = screen.width;
-		canvas.height = screen.height - 56;
+		var ctx = canvas.getContext("2d");
+		var ratio = getPixelRatio(ctx);
+		canvas.width = screen.width*ratio;
+		canvas.height = (screen.height - 56)*ratio;
 		var imageBackground = document.getElementById("imageBackground");
 		var imageBG = document.getElementById("imageBG");
 		var imageQR = document.getElementById("imageQR");
 		var imageResult = document.getElementById("imageResult");
-		var canvasWidth = screen.width;
-		var canvasHeight = screen.height - 56;
+		var canvasWidth = canvas.width;
+		var canvasHeight = canvas.height;
 		var imageBGWidth = 347/375*canvasWidth;
 		var imageBGHeight = 386/347*imageBGWidth;
 		var imageQRWidth = 160/375*canvasWidth;
 
 
-		var ctx = canvas.getContext("2d");
-		var ratio = getPixelRatio(ctx);
-		ctx.drawImage(imageBackground, 0, 0, canvasWidth*ratio, canvasHeight*ratio);
-		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth*ratio, imageBGHeight*ratio);
-		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth*ratio, imageQRWidth*ratio);
+
+
+		ctx.drawImage(imageBackground, 0, 0, canvasWidth, canvasHeight);
+		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
+		ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 
 		var dataURL = canvas.toDataURL();
 		imageResult.src = dataURL;
