@@ -47,6 +47,8 @@ function onPageLoaded() {
 			debug(err);
 		});
 	}, 'json');
+
+	generateShareImage();
 }
 
 function getLastIncome() {
@@ -178,9 +180,6 @@ $(document).ready(function() {
 
 });
 
-window.onload = function() {
-	generateShareImage();
-};
 
 function generateShareImage() {
 	try {
@@ -191,6 +190,7 @@ function generateShareImage() {
 		var imageBackground = document.getElementById("imageBackground");
 		var imageBG = document.getElementById("imageBG");
 		var imageQR = document.getElementById("imageQR");
+		var imageResult = document.getElementById("imageResult");
 		var canvasWidth = screen.width;
 		var canvasHeight = screen.height - 56;
 		var imageBGWidth = 325/375*canvasWidth;
@@ -202,8 +202,8 @@ function generateShareImage() {
 		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
 		//ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 
-		var dataURL = canvas.toDataURL("image/jpeg", 1);
-		$('#imageResult').attr("src", dataURL);
+		var dataURL = canvas.toDataURL();
+		imageResult.src = dataURL;
 	}
 
 
