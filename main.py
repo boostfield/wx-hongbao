@@ -1,12 +1,12 @@
 from __future__ import print_function
 import os
 import json
-import sqlite3
 import strategy
+import pymysql
 import service
 from datetime import datetime
 from logging import Formatter, FileHandler
-from common import randstr, now_sec
+from common import randstr, now_sec, json_dumps
 from flask import Flask, request, redirect, session, g, abort
 
 app = Flask(__name__)
@@ -34,13 +34,13 @@ SUCCESS = 'SUCCESS'
 FAIL = 'FAIL'
 
 def connect_db():
-    return sqlite3.connect(app.config['CWD'] + '/' + app.config['DATABASE'])
+    return pymysql.connect(app.config['DB_HOST'], app.config['DB_USER'], app.config['DB_PASS'], app.config['DB_SCHEMA'],
+                           use_unicode=True, charset='utf8')
 
 def init_db():
     with connect_db() as db:
-        with app.open_resource('schema.sql') as f:
-            db.cursor().executescript(f.read().decode('utf-8'))
-        db.commit()
+        with app.open_resource('schema.mysql.sql') as f:
+            db.execute(f.read().decode('utf-8'))
 
 def shared_money(money):
     return int(money * app.config['AGENT_SHARE_PERCENT'])
@@ -64,7 +64,7 @@ def print_req(req, printer):
     printer(req.data)
 
 def ret_msg(ret, msg = ''):
-    return json.dumps({ 'ret': ret, 'msg': msg })
+    return json_dumps({ 'ret': ret, 'msg': msg })
 
 def _timestamp_str():
     now = datetime.now()
@@ -176,7 +176,6 @@ def get_user_share_qrcode():
         return redirect(weixin_oauth2_url())
 
     user = service.find_user(openid)
-    app.logger.info(user)
     rsp = dict(ret=SUCCESS, msg='ok')
     if not user['share_qrcode']:
         qr_file = randstr()
@@ -186,11 +185,10 @@ def get_user_share_qrcode():
             service.update_user(user)
         else:
             rsp = dict(ret=FAIL, msg='download qrcode failed')
-            return json.dumps(rsp)
+            return json_dumps(rsp)
             
     rsp['qrcode'] = user['share_qrcode']
-    app.logger.info(rsp)
-    return json.dumps(rsp)
+    return json_dumps(rsp)
 
 # 用户在网页端授权后回调至此位置
 @app.route('/auth/redirect')
@@ -224,7 +222,7 @@ def get_jsapi_sign():
     if url is None:
         return 'fuck you'
 
-    return json.dumps(weixin.get_jsapi_sign(url))
+    return json_dumps(ret)
 
 def _build_order(openid, money, remote_addr):
     order = Message()
@@ -379,7 +377,7 @@ def receive_tax():
     pay_sign = weixin.get_pay_sign(result.prepay_id)
     pay_sign['ret'] = SUCCESS
     pay_sign['msg'] = 'ok'
-    return json.dumps(pay_sign)
+    return json_dumps(pay_sign)
 
 @app.route('/income/last')
 def get_user_last_income():
@@ -393,7 +391,7 @@ def get_user_last_income():
     if rsp[0] is None:
         ret['msg'] = 'not found' 
         
-    return json.dumps(ret)
+    return json_dumps(ret)
 
 
 @app.route('/agent/account')
@@ -423,7 +421,7 @@ def get_user_account_detail_as_agent():
     ret = dict(ret=SUCCESS, msg='ok', total_bill_num=total_bill_num, shared_bill_num=shared_bill_num,
                page=page, pagesize=pagesize, total_income=total_income, shared_income=shared_income,
                follower_num=service.find_follower_num(openid), bills=ret_bills)
-    return json.dumps(ret)
+    return json_dumps(ret)
     
 # just for test
 @app.route('/test/<func>', methods=['POST'])
@@ -439,7 +437,7 @@ def test(func):
         del session['openid']
 
     if func == 'session':
-        return json.dumps(dict(session))
+        return json_dumps(dict(session))
     return 'ok'
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 import time
-from datetime import datetime
+from datetime import date, datetime
+import json
 import uuid
 
 def now():
@@ -18,3 +19,17 @@ def save_file(path, data):
     print(data)
     with open(path, 'w') as file:
         file.write(data)
+
+class ExternJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%s')
+        if isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
+        return json.JSONEncoder.default(self, obj)
+    
+def json_dumps(obj):
+    return json.dumps(obj, cls=ExternJsonEncoder)
+
+
+

@@ -45,9 +45,9 @@ class HTTP:
         return url
     
     @classmethod
-    def ssl_post(cls, url, data):
+    def ssl_post(cls, cert_file, key_file, url, data):
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-        context.load_cert_chain(ssl_cert_file, ssl_key_file)
+        context.load_cert_chain(cert_file, key_file)
         rsp = urllib.request.urlopen(url, data, context=context)
         return rsp.read().decode('utf-8')
 

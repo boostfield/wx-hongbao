@@ -152,7 +152,7 @@ def create_menu(menu):
     return json.loads(rsp)
 
 def send_redpack(redpack):
-    result = HTTP.ssl_post(WX_URL_SEND_REDPACK, redpack.xml())
+    result = HTTP.ssl_post(ssl_cert_file, ssl_key_file, WX_URL_SEND_REDPACK, redpack.xml())
     return result
 
 def get_unlimit_qrcode_ticket(arg):
