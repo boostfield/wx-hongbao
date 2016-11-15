@@ -167,7 +167,8 @@ $(document).ready(function() {
 	canvas.width = screen.width;
 	canvas.height = screen.height - 56;
 
-	$('#imageQR').attr("onload", "generateShareImage()");
+	//$('#imageQR').attr("onload", "generateShareImage()");
+
 
 	$.get(URLS.getQRcode, function(rsp) {
 		var qrUrl = URLS.host + '/qrcode/' + rsp.qrcode;
@@ -176,6 +177,10 @@ $(document).ready(function() {
 
 
 });
+
+window.onload = function() {
+	generateShareImage();
+};
 
 function generateShareImage() {
 	try {
@@ -197,7 +202,7 @@ function generateShareImage() {
 		ctx.drawImage(imageBG, (canvasWidth - imageBGWidth) / 2, (canvasHeight - imageBGHeight) / 2, imageBGWidth, imageBGHeight);
 		//ctx.drawImage(imageQR,  (canvasWidth - imageQRWidth) / 2, (canvasHeight - imageQRWidth) / 2, imageQRWidth, imageQRWidth);
 
-		var dataURL = canvas.toDataURL();
+		var dataURL = canvas.toDataURL("image/jpeg", 1);
 		$('#imageResult').attr("src", dataURL);
 	}
 
