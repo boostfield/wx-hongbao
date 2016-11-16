@@ -14,7 +14,7 @@ FAIL = 'FAIL'
 SUCCESS = 'SUCCESS'
 OPENID = 'oenW2wz47W1RisML5QijHzwRz34M'
 
-class TestCase(unittest.TestCase):
+class TC(unittest.TestCase):
     def setUp(self):
         main.app.config['TESTING'] = True
         main.app.logger.setLevel('DEBUG')
@@ -24,35 +24,34 @@ class TestCase(unittest.TestCase):
 
     def tearDown(self):
         service.db.close()
-        pass
 
     def login(self, openid):
-        self.app.post('/test/login?openid={}'.format(openid))
+        self.app.post('/api/test/login?openid={}'.format(openid))
 
     def logout(self):
-        self.app.post('/test/logout')
+        self.app.post('/api/test/logout')
 
     def getsession(self):
         rsp = self.app.post('/test/session')
         return json.loads(rsp.data.decode('utf-8'))
 
     def test_pay_not_login(self):
-        rsp = self.app.post('/pay')
+        rsp = self.app.post('/api/pay')
         self.assertEqual('302 FOUND', rsp.status)
 
     def test_pay_illegal_money(self):
         self.login(OPENID)
-        rsp = self.app.post('/pay', environ_base={'REMOTE_ADDR':'127.0.0.1'})
+        rsp = self.app.post('/api/pay', environ_base={'REMOTE_ADDR':'127.0.0.1'})
         rsp = main.get_json_object(rsp)
         self.assertEqual(FAIL, rsp['ret'])
 
-        rsp = self.app.post('/pay', environ_base={'REMOTE_ADDR':'127.0.0.1'}, data='{"money":"10"}')
+        rsp = self.app.post('/api/pay', environ_base={'REMOTE_ADDR':'127.0.0.1'}, data='{"money":"10"}')
         rsp = main.get_json_object(rsp)
         self.assertEqual(FAIL, rsp['ret'])
 
     def test_pay_success(self):
         self.login(OPENID)
-        rsp = self.app.post('/pay', data='{"money": 10}', environ_base={'REMOTE_ADDR':'127.0.0.1'})
+        rsp = self.app.post('/api/pay', data='{"money": 10}', environ_base={'REMOTE_ADDR':'127.0.0.1'})
         rsp = main.get_json_object(rsp)
         self.assertEqual(SUCCESS, rsp['ret'])
         pay = service.find_user_pays(OPENID)[0]
@@ -85,13 +84,13 @@ class TestCase(unittest.TestCase):
         
     def test_find_user_all_bill(self):
         bill = service.find_user_bill(OPENID)
-        self.assertEqual([], bill)
+        self.assertEqual((), bill)
 
         user_pay = dict(openid=OPENID, money=1, trade_no='no1', ip='0.0.0.0', state='OK')
         service.save_user_pay(user_pay)
 
         bill = service.find_user_bill(OPENID)
-        self.assertEqual([(1, None)], bill)
+        self.assertEqual(((1, None),), bill)
 
         user_pay = dict(openid=OPENID, money=2, trade_no='no2', ip='0.0.0.0', state='OK')
         service.save_user_pay(user_pay)
@@ -108,7 +107,7 @@ class TestCase(unittest.TestCase):
         service.save_sys_pay(sys_pay)
 
         bill = service.find_user_bill(OPENID)
-        self.assertEqual([(1, 1), (2, 2), (3, 3), (4, None)], bill)
+        self.assertEqual(((1, 1), (2, 2), (3, 3), (4, None)), bill)
 
     # 用户未注册时自主订阅
     def test_user_subscribe(self):
@@ -120,7 +119,7 @@ class TestCase(unittest.TestCase):
         msg.Event = 'subscribe'
 
         self.assertEqual({}, self.getsession())
-        rsp = self.app.post('/callback', data=msg.xml())
+        rsp = self.app.post('/api/callback', data=msg.xml())
         self.assertEqual(SUCCESS, rsp.data.decode('utf-8'))
 
         user = service.find_user(OPENID)
@@ -133,36 +132,37 @@ class TestCase(unittest.TestCase):
         
     # 用户未注册时分销订阅
     def test_user_follow_subscribe(self):
+        service.create_user('user0')
+        service.create_user('user1')
         msg = weixin.Message()
         msg.ToUserName = 'server'
         msg.FromUserName = OPENID
         msg.CreateTime = now()
         msg.MsgType = 'event'
         msg.Event = 'subscribe'
-        msg.EventKey = 'qrscene_2'
+        msg.EventKey = 'qrscene_1'
 
         self.assertEqual({}, self.getsession())
-        rsp = self.app.post('/callback', data=msg.xml())
+        rsp = self.app.post('/api/callback', data=msg.xml())
         self.assertEqual(SUCCESS, rsp.data.decode('utf-8'))
 
         user = service.find_user(OPENID)
         self.assertEqual(OPENID, user['openid'])
-        self.assertEqual(2, user['agent'])
+        self.assertEqual(1, user['agent'])
         self.assertEqual({'openid': OPENID}, self.getsession())
 
         event = service.find_events(OPENID, 'follow')[0]
         self.assertEqual(OPENID, event['openid'])
         self.assertEqual('follow', event['type'])
-        self.assertEqual('2', event['info'])
-        
+        self.assertEqual('1', event['info'])
         
     def test_get_share_qrcode(self):
         service.create_user(OPENID)
         self.login(OPENID)
-        rsp = self.app.get('/share/qrcode')
+        rsp = self.app.get('/api/share/qrcode')
         rsp = json.loads(rsp.data.decode('utf-8'))
         self.assertEqual(SUCCESS, rsp['ret'])
-        self.assertIn('ticket', rsp)
+        self.assertIn('qrcode', rsp)
 
     def test_find_unshared_profit(self):
         service.create_user(OPENID)
@@ -254,7 +254,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(expect, service.find_agent_bill(OPENID))
 
         self.login(OPENID)
-        rsp = self.app.get('/agent/account')
+        rsp = self.app.get('/api/agent/account')
         rsp = json.loads(rsp.data.decode('utf-8'))
         expect = dict(ret=SUCCESS, msg='ok', follower_num=1, page=0, pagesize=50, total_bill_num=5,
                       shared_bill_num=2, total_income=250, shared_income=100,
@@ -271,27 +271,34 @@ class TestCase(unittest.TestCase):
         service.create_user(OPENID)
         self.login(OPENID)
 
-        rsp = self.app.get('/income/last')
+        rsp = self.app.get('/api/income/last')
         rsp = json.loads(rsp.data.decode('utf-8'))
         self.assertEqual(None, rsp['money'])
 
         sys_pay = dict(openid=OPENID, money=50, billno='bill3', state=SUCCESS, type='RETURN')
         service.save_sys_pay(sys_pay)
-        rsp = self.app.get('/income/last')
+        rsp = self.app.get('/api/income/last')
         rsp = json.loads(rsp.data.decode('utf-8'))
         self.assertEqual(50, rsp['money'])
 
         sys_pay = dict(openid=OPENID, money=100, billno='bill3', state=SUCCESS, type='SHARE')
         service.save_sys_pay(sys_pay)
-        rsp = self.app.get('/income/last')
+        rsp = self.app.get('/api/income/last')
         rsp = json.loads(rsp.data.decode('utf-8'))
         self.assertEqual(50, rsp['money'])
 
+        sys_pay['type'] = ['RETURN']
+        service.update_sys_pay(sys_pay)
+        rsp = self.app.get('/api/income/last')
+        rsp = json.loads(rsp.data.decode('utf-8'))
+        self.assertEqual(100, rsp['money'])
+
         sys_pay = dict(openid=OPENID, money=60, billno='bill3', state=FAIL, type='RETURN')
         service.save_sys_pay(sys_pay)
-        rsp = self.app.get('/income/last')
+        rsp = self.app.get('/api/income/last')
         rsp = json.loads(rsp.data.decode('utf-8'))
-        self.assertEqual(50, rsp['money'])
+        self.assertEqual(100, rsp['money'])
+
 
     def test_weixin_check_sign(self):
         msg = weixin.Message()
@@ -312,6 +319,8 @@ class TestCase(unittest.TestCase):
         msg.transaction_id = '4007282001201611129539346065'
         msg.sign = '701DA5F1F043518ACA4B150BD0C38722'
         self.assertTrue(msg.check_sign())
+
+
 
 if __name__ == '__main__':
     unittest.main()

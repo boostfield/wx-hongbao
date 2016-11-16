@@ -14,20 +14,13 @@ DB_USER = 'wx_redpack'
 DB_PASS = 'boost'
 DB_HOST = 'localhost'
 DB_SCHEMA = 'wx_redpack'
-LOG_LEVEL = 'INFO'
+LOG_LEVEL = 'DEBUG'
 AGENT_SHARE_PERCENT = 0.05      # 代理提成点数
 REDPACK_MAX = 20000             # 红包最大金额
 REDPACK_MIN = 100             # 红包最小金额
+AVAILABLE_PAY_MONEY = [100, 1000] # 用户可以支付的金额
 LOG_FORMAT = '[%(levelname)s] %(asctime)s [%(process)d:%(thread)d] [%(funcName)s@%(pathname)s:%(lineno)s]- %(message)s'
 SECRET_KEY = '4c7b0db408b0c1b4242337ade30120f1'
 WEIXIN_SSL_CERT_FILE = '/var/www/wx-test/apiclient_cert.pem'
 WEIXIN_SSL_KEY_FILE = '/var/www/wx-test/apiclient_key.pem'
-RESTITUTION_STRATEGY = {
-    'strategy': (
-        (1, 100, 110),
-        (2, 4, 50, 140),
-        (0, 55, 130)
-    ),
-    'correction': (3, 2)
-}
-AUTH2_SHORT_URL = "http://w.url.cn/s/ARVmguN"
+AUTH2_SHORT_URL = "http://w.url.cn/s/Aa5QzRQ"

@@ -21,7 +21,9 @@ STRATEGY_FILES_SUFFIX = '.json'
 STRATEGY_REFREASH_INTERVAL = 120 # 重新加载策略的间隔时间（分钟）
 TIMESTAMP_FMT = '%Y-%m-%d %H:%M:%S'
 
+count = [0, 0, 0, 0, 0, 0, 0, 0]
 CONFIG_DEFAULT_VALUE = {
+    "name": 'default',
     "enable": True,
     "priority": 2,
     "goal": "gain",
@@ -29,8 +31,8 @@ CONFIG_DEFAULT_VALUE = {
     "loss_limit": 3000,
     "min_redpack": 100,
     "max_redpack": 20000,
-    "miss_limit": 5,
-    "win_limit": 2,
+    "miss_limit": 8,
+    "win_limit": 3,
     "custom": {
         "detail":[],
         "default": []
@@ -71,6 +73,10 @@ class StrategyManager:
 
     def add(self, stg):
         self.strategies.append(stg)
+
+    def clean(self):
+        self.strategies = []
+        self._current_strategy = None
 
     def _load_strategies(self):
         logger.info('load strategies')
@@ -124,6 +130,7 @@ class Strategy:
         self.total_income = 0
         self.total_pay = 0
         self.user_num = 0
+        self.pay_num = 0
         self._users_history = {}
 
     def start_at(self):
@@ -158,6 +165,7 @@ class Strategy:
         
         if self.config['enable'] and _now > self._available_time():
             return True
+
         return False
     
     def start(self):
@@ -166,6 +174,7 @@ class Strategy:
         self.total_income = 0
         self.total_pay = 0
         self.user_num = 0
+        self.pay_num = 0
         self.started = True
         self._users_history = {}
 
@@ -182,12 +191,16 @@ class Strategy:
         _range = self._find_pay_range(history.index, history.play_times)
         pay = self._rand_pay(income, _range) if _range else self._global_pay(openid, income)
         self.total_pay += pay
+        self.pay_num += 1
         history.append(income, pay)
 
         return pay
 
     def net_profit(self):
         return self.total_income - self.total_pay
+
+    def profit_rate(self):
+        return round(self.net_profit() / self.total_pay, 2)
 
     ###################
     # private methods #
@@ -238,7 +251,7 @@ class Strategy:
         return pay
 
     def _rand_money(self, income, low, high=None):
-        """ 在 low-high 直间随机生成一个返现金额，low/high 表示倍率，若不指定high则取红包上限 """
+        """ 在 low-high 之间随机生成一个返现金额，low/high 表示倍率，若不指定high则取红包上限 """
         _low = max(min(int(income * low), self.config['max_redpack']), self.config['min_redpack'])
         if high is None: _high = self.config['max_redpack']
         else: _high = max(min(int(income * high), self.config['max_redpack']), self.config['min_redpack'])
@@ -255,28 +268,39 @@ class Strategy:
         must_miss = history.continue_win_times() >= self.config['win_limit']
         
         if self.config['goal'] == 'gain':
-            expect_profit = self.total_pay * (100 + self.config['gain_rate']) // 100
+            expect_profit = int(self.total_pay * (self.config['gain_rate'] / 100))
             exceed_profit = self.net_profit() - expect_profit
+
+            # print(self.total_pay, expect_profit, self.net_profit(), exceed_profit)
             if exceed_profit >= 0: # 已超出盈利目标, 尽最大可能让利
+                count[0] += 1
                 return self._rand_money(income, 5)
             else:
                 if must_win:    # 未达盈利目标但用户连输，仍返利
+                    count[1] += 1
                     return self._rand_money(income, 1.5, 4)
                 elif must_miss: # 
+                    count[2] += 1
                     return self._rand_money(income, 0.5, 0.8)
                 else:
+                    count[3] += 1
                     return self._rand_money(income, 0.5, 1.2)
         else:                   # 目标是让利
             total_loss = -self.net_profit()
-            may_loss = self.config['loss_limit'] - total_loss
+            may_loss = self.config['loss_limit'] * 100 - total_loss
             if may_loss > 0:    # 有利可让
-                return min(may_loss, self._rand_money(income, 5))
+                count[4] += 1
+                # todo: 一定概率下返回较大金额
+                return self._rand_money(income, 0.9, 1.3)
             else:
                 if must_win:    # 已无利可让但用户连输，仍返利
+                    count[5] += 1
                     return self._rand_money(income, 1.5, 4)
                 elif must_miss:
+                    count[6] += 1
                     return self._rand_money(income, 0.5, 0.8)
                 else:
+                    count[7] += 1
                     return self._rand_money(income, 0.5, 0.8)
         
 class UserHistory:

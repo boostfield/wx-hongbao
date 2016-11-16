@@ -22,8 +22,8 @@ class TC(unittest.TestCase):
         Path(strategy.STRATEGY_FILES_HOME).mkdir()
         
     def tearDown(self):
+        strategy.StrategyManager.get_manager().clean()
         Path(strategy.STRATEGY_FILES_HOME).rmdir()
-        
         
     def test_strategy_enable(self):
         config = dict(enable=False)
@@ -56,7 +56,7 @@ class TC(unittest.TestCase):
         self.assertEqual(100, pay)
 
         pay = stg.pay('user0', 1000)
-        self.assertIn(900, 1100)
+        self.assertIn(pay, range(900, 1101))
         
     def test_priority(self):
         manager = strategy.StrategyManager.get_manager()
@@ -110,15 +110,47 @@ class TC(unittest.TestCase):
             self.assertIn(stg.pay(user, 100), range(90, 93)) 
             self.assertIn(stg.pay(user, 100), range(100, 104)) 
 
-    def test_summary(self):
-        stg = strategy.Strategy({})
-
-        print(stg.pay('user', 10000))
-        print(stg.pay('user', 10000))
-        print(stg.pay('user', 10000))
-        print(stg.pay('user', 10000))
-        print(stg.pay('user', 10000))
-        print(stg.pay('user', 10000))
+    def test_all_strategy_disabled(self):
+        """ 使用默认策略 """
+        config = {
+            "name": 'strategy1',
+            "disable_time": fmt_timestamp(now_sec() + 3, TIMESTAMP_FMT)
+            }
         
+        stg = Strategy(config)
+        strategy.StrategyManager.get_manager().add(stg)
+        self.assertEqual('strategy1', strategy.get_strategy().name)
+        time.sleep(4)
+        self.assertEqual('default', strategy.get_strategy().name)
+        
+    def test_reload_strategy(self):
+
+        pass
+    
+    def test_summary(self):
+        stg = strategy.Strategy({
+            'goal': 'loss',
+            'loss_limit': 3000
+        })
+
+        total = 0
+        times = 10000
+        for i in range(times):
+            pay0 = stg.pay('user0', 1000)
+            pay1 = stg.pay('user1', 1000)
+            pay2 = stg.pay('user2', 1000)
+
+            print(pay0, pay1, pay2)
+            total += (pay0 + pay1 + pay2)
+
+        # self.assertEqual(times * 3 * 1000, stg.total_income)
+        # self.assertEqual(total, stg.total_pay)
+        # self.assertEqual(3, stg.user_num)
+        self.assertEqual(3 * times, stg.pay_num)
+        # self.assertEqual(stg.total_income - total, stg.net_profit())
+        # print("net profit: %d" % stg.net_profit())
+        print("profit rate: %f" % stg.profit_rate())
+        print(strategy.count)
+    
 if __name__ == '__main__':
     unittest.main()

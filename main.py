@@ -9,7 +9,7 @@ from logging import Formatter, FileHandler
 from common import randstr, now_sec, json_dumps
 from flask import Flask, request, redirect, session, g, abort
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 app.config.from_pyfile('conf/config.py')
 app.config['CWD'] = os.path.dirname(os.path.abspath(__file__))
 app.config['STATIC_HOME'] = app.config['CWD'] + '/static'
@@ -82,6 +82,7 @@ def weixin_oauth2_url():
 
 @app.before_request
 def before_request():
+    app.logger.debug(request.url)
     if not app.config['TESTING']:
         g.db = connect_db()
         service.db = g.db
@@ -93,17 +94,21 @@ def after_request(response):
     return response
 
 @app.route('/')
+def index():
+    return app.send_static_file('index.html')
+
+@app.route('/api')
 def print_request():
     print_req(request, print)
     app.logger.info('fuck')
     return 'fuck'
 
-@app.route('/debug', methods=['POST'])
+@app.route('/api/debug', methods=['POST'])
 def wx_debug_helper():
     print_req(request, app.logger.info)
     return 'ok'
 
-@app.route('/callback')
+@app.route('/api/callback')
 def auth():
     return request.args.get('echostr')
 
@@ -147,7 +152,7 @@ def _handle_scan(msg):
     service.save_event(msg.FromUserName, msg.Event, agent)
     return SUCCESS
     
-@app.route('/callback', methods=['POST'])
+@app.route('/api/callback', methods=['POST'])
 def callback():
     app.logger.info(request.data)
     msg = Message(request.data)
@@ -169,7 +174,7 @@ def callback():
 
     return reply_msg.xml()
 
-@app.route('/share/qrcode')
+@app.route('/api/share/qrcode')
 def get_user_share_qrcode():
     openid = session.get('openid')
     if not openid:
@@ -188,10 +193,11 @@ def get_user_share_qrcode():
             return json_dumps(rsp)
             
     rsp['qrcode'] = user['share_qrcode']
+    app.logger.debug("user: %s, get qrcode return: %s", openid, rsp)
     return json_dumps(rsp)
 
 # 用户在网页端授权后回调至此位置
-@app.route('/auth/redirect')
+@app.route('/api/auth/redirect')
 def auth_redirect():
     openid = session.get('openid')
     if openid is None:
@@ -212,17 +218,17 @@ def auth_redirect():
     session['openid'] = openid
     return redirect(app.config['WEB_ROOT'] + '/index.html')
 
-@app.route('/access_token')
+@app.route('/api/access_token')
 def get_access_token():
     return weixin.get_access_token()
 
-@app.route('/jsapi/sign')
+@app.route('/api/jsapi/sign')
 def get_jsapi_sign():
     url = request.args.get('url')   # 当前需要执行jsapi的url
     if url is None:
         return 'fuck you'
 
-    return json_dumps(ret)
+    return json_dumps(weixin.get_jsapi_sign(url))
 
 def _build_order(openid, money, remote_addr):
     order = Message()
@@ -287,7 +293,7 @@ def _send_redpack(openid, user_pay_id, money):
     service.update_sys_pay(sys_pay)
     
 # DOC: https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=9_7
-@app.route('/pay/notify', methods=['POST'])
+@app.route('/api/pay/notify', methods=['POST'])
 def process_pay_result():
     reply = Message()
     reply.return_code = SUCCESS
@@ -327,7 +333,7 @@ def process_pay_result():
     _send_redpack(openid, pay['id'], pay['money'])
     return reply.xml()
 
-@app.route('/pay', methods=['POST'])
+@app.route('/api/pay', methods=['POST'])
 def receive_tax():
     openid = session.get('openid')
     if openid is None:
@@ -339,12 +345,11 @@ def receive_tax():
         return ret_msg(FAIL, 'money amount is required')
 
     data = get_json_object(request)
-    if 'money' not in data or type(data['money']) is not int or data['money'] <= 0:
-        app.logger.warning("get a illegal pay request from user: %s, ip: %s", openid, remote_addr)
+    if 'money' not in data or type(data['money']) is not int or data['money'] not in app.config['AVAILABLE_PAY_MONEY']:
+        app.logger.warning("get a illegal pay request from user: %s, ip: %s, illegal money: %s", openid, remote_addr, str(data.get('money')))
         return ret_msg(FAIL, 'money content error')
 
     order = _build_order(openid, data['money'], remote_addr)
-    app.logger.info(order.xml())
     result = weixin.make_order(order)
     pay_info = dict(
         openid=openid,
@@ -379,7 +384,7 @@ def receive_tax():
     pay_sign['msg'] = 'ok'
     return json_dumps(pay_sign)
 
-@app.route('/income/last')
+@app.route('/api/income/last')
 def get_user_last_income():
     openid = session.get('openid')
     if openid is None:
@@ -394,7 +399,7 @@ def get_user_last_income():
     return json_dumps(ret)
 
 
-@app.route('/agent/account')
+@app.route('/api/agent/account')
 def get_user_account_detail_as_agent():
     openid = session.get('openid')
     if openid is None:
@@ -424,7 +429,7 @@ def get_user_account_detail_as_agent():
     return json_dumps(ret)
     
 # just for test
-@app.route('/test/<func>', methods=['POST'])
+@app.route('/api/test/<func>', methods=['POST'])
 def test(func):
     if not app.config['TESTING']:
         abort(403)
@@ -441,4 +446,4 @@ def test(func):
     return 'ok'
 
 if __name__ == '__main__':
-    app.run('0.0.0.0', debug=True)
+    app.run('0.0.0.0', port=80, threaded=True, debug=True)
