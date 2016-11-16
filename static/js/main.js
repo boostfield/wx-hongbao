@@ -62,7 +62,6 @@ function getLastIncome() {
 		if (rsp.msg == 'ok') {
 			$('#rollResult').text(point2yuan(rsp.money));
 			$('#modal').show();
-			prependLatestHistory(rsp.money, rsp.time);
 		} else {
 
 		}
@@ -225,7 +224,3 @@ function getPixelRatio(context) {
 	return ratio;
 }
 
-
-function prependLatestHistory(money, time) {
-	$('div.list-content').prepend(newListContent(money, time));
-}
