@@ -41,9 +41,12 @@ class Message:
         for item in root:
             self.__dict__[item.tag] = item.text
         
-    def __init__(self, xml=None):
-        if xml:
-            self._inflate(xml)
+    def __init__(self, arg=None):
+        if arg:
+            if isinstance(arg, dict):
+                self.__dict__ = arg.copy()
+            else:
+                self._inflate(arg)
 
     def __iter__(self):
         return iter(self.__dict__)
@@ -153,7 +156,7 @@ def create_menu(menu):
 
 def send_redpack(redpack):
     result = HTTP.ssl_post(ssl_cert_file, ssl_key_file, WX_URL_SEND_REDPACK, redpack.xml())
-    return result
+    return Message(result)
 
 def get_unlimit_qrcode_ticket(arg):
     args = {

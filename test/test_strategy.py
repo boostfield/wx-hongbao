@@ -18,7 +18,6 @@ OPENID = 'oenW2wz47W1RisML5QijHzwRz34M'
 TIMESTAMP_FMT = '%Y-%m-%d %H:%M:%S'
 
 class TC(unittest.TestCase):
-
     def setUp(self):
         Path(strategy.STRATEGY_FILES_HOME).mkdir()
         
@@ -142,6 +141,7 @@ class TC(unittest.TestCase):
             "disable_time": fmt_timestamp(now_sec() + 3, TIMESTAMP_FMT)
             }
         self._dump_strategy(config)
+        strategy.StrategyManager.get_manager().load_strategies()
         stg = strategy.get_strategy()
         self.assertEqual('stg0', stg.name)
 
@@ -163,7 +163,6 @@ class TC(unittest.TestCase):
         stg = strategy.get_strategy()
         self.assertEqual('stg2', stg.name)
 
-
     
     def test_summary(self):
         stg = strategy.Strategy({
@@ -184,8 +183,8 @@ class TC(unittest.TestCase):
         self.assertEqual(3, stg.user_num)
         self.assertEqual(3 * times, stg.pay_num)
         self.assertEqual(stg.total_income - total, stg.net_profit())
-        print("net profit: %d" % stg.net_profit())
-        print("profit rate: %f" % stg.profit_rate())
+        # print("net profit: %d" % stg.net_profit())
+        # print("profit rate: %f" % stg.profit_rate())
 
     def test_rand_rand_money(self):
         stg = Strategy(dict(min_redpack=0))

@@ -51,7 +51,7 @@ class StrategyManager:
         return cls.strategy_manager
 
     def __init__(self):
-        self._load_strategies()
+        self.load_strategies()
         self._current_strategy = None
         
     def get_strategy(self):
@@ -77,7 +77,7 @@ class StrategyManager:
         self.strategies = []
         self._current_strategy = None
 
-    def _load_strategies(self):
+    def load_strategies(self):
         logger.info('load strategies')
         self.strategy_files = self._find_strategy_files()
         self.strategies = [Strategy(file) for file in self.strategy_files]
@@ -93,7 +93,7 @@ class StrategyManager:
     def _find_strategy(self):
         if self._strategies_old():
             logger.info("timeout since last load strategies")
-            self._load_strategies()
+            self.load_strategies()
             
         available_strategies = [s for s in self.strategies if s.is_available()]
 
@@ -114,16 +114,15 @@ class Strategy:
     def __init__(self, cfg):
         if isinstance(cfg, dict):
             self.config = cfg
-            self.name = None
         elif isinstance(cfg, str):
             with open(cfg) as f:
                 self.config = json.loads(f.read())
-            self.name = self._get_filename(cfg)
+            self.config.setdefault('name', self._get_filename(cfg))
 
         self._fill_config_default()
         self._check_config()
 
-        self.name = self.config.get('name') or self.name
+        self.name = self.config['name']
         self.start_time = None
         self.stop_time = None
         self.started = False

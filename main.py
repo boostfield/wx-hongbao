@@ -3,7 +3,7 @@ import os
 import json
 import strategy
 import pymysql
-import service
+from service import Service
 from datetime import datetime
 from logging import Formatter, FileHandler
 from common import randstr, now_sec, json_dumps
@@ -84,10 +84,9 @@ def _get_agent(eventkey):
     content = eventkey[len('qrscene_'):]
     return int(content)
 
-def _handle_subscribe(msg):
+def _handle_subscribe(service, msg):
     user = service.find_user(msg.FromUserName)
     if 'EventKey' in msg:
-        app.logger.info(msg)
         agent = _get_agent(msg.EventKey)
         # 分销关注
         if user is None:
@@ -109,12 +108,12 @@ def _handle_subscribe(msg):
     session['openid'] = msg.FromUserName
     return SUCCESS
             
-def _handle_unsubscribe(msg):
+def _handle_unsubscribe(service, msg):
     app.logger.info('user %s unsubscribe app', msg.FromUserName)
     service.save_event(msg.FromUserName, msg.Event)
     return SUCCESS
 
-def _handle_scan(msg):
+def _handle_scan(service, msg):
     agent = int(msg.EventKey)
     app.logger.info('user %s scan qrcode own by user: %d', msg.FromUserName)
     service.save_event(msg.FromUserName, msg.Event, agent)
@@ -135,7 +134,7 @@ def _build_order(openid, money, remote_addr):
     order.sign()
     return order
 
-def _send_redpack(openid, user_pay_id, money):
+def _send_redpack(service, openid, user_pay_id, money):
     money = strategy.get_strategy().pay(openid, money)
     redpack = Message()
     redpack.nonce_str = randstr()
@@ -153,7 +152,6 @@ def _send_redpack(openid, user_pay_id, money):
     redpack.sign()
     # FIXME: 若在发出红包之后，向微信确认之前出现异常，微信会重复发送此事件，导致重复给用户发红包
     result = weixin.send_redpack(redpack)
-    result = Message(result)
 
     sys_pay = dict(openid=openid, money=money, billno=redpack.mch_billno,
                    user_pay_id=user_pay_id, state='SENDED', type='RETURN')
@@ -184,15 +182,12 @@ def _send_redpack(openid, user_pay_id, money):
     
 @app.before_request
 def before_request():
-    app.logger.debug(request.url)
-    if not app.config['TESTING']:
-        g.db = connect_db()
-        service.db = g.db
+    g.db = connect_db()
+    g.service = Service(g.db)
 
 @app.after_request
 def after_request(response):
-    if not app.config['TESTING']:
-        g.db.close()
+    g.db.close()
     return response
 
 @app.route('/')
@@ -210,15 +205,14 @@ def auth():
 
 @app.route('/api/callback', methods=['POST'])
 def callback():
-    app.logger.info(request.data)
     msg = Message(request.data)
     if msg.MsgType == 'event':
         if msg.Event == 'subscribe':
-            return _handle_subscribe(msg)
+            return _handle_subscribe(g.service, msg)
         if msg.Event == 'unsubscribe':
-            return _handle_unsubscribe(msg)
+            return _handle_unsubscribe(g.service, msg)
         if msg.Event == 'SCAN':
-            return _handle_scan(msg)
+            return _handle_scan(g.service, msg)
         
     reply_msg = Message()
 
@@ -236,14 +230,14 @@ def get_user_share_qrcode():
     if not openid:
         return redirect(weixin_oauth2_url())
 
-    user = service.find_user(openid)
+    user = g.service.find_user(openid)
     rsp = dict(ret=SUCCESS, msg='ok')
     if not user['share_qrcode']:
         qr_file = randstr()
         ticket = weixin.get_unlimit_qrcode_ticket(user['id'])
         if weixin.dump_qrcode(ticket, app.config['QRCODE_HOME'] + '/' + qr_file):
             user['share_qrcode'] = qr_file
-            service.update_user(user)
+            g.service.update_user(user)
         else:
             rsp = dict(ret=FAIL, msg='download qrcode failed')
             return json_dumps(rsp)
@@ -264,11 +258,11 @@ def auth_redirect():
         openid = access_token['openid']
 
     # 记录用户登录信息
-    user = service.find_user(openid)
+    user = g.service.find_user(openid)
     if user is None:
-        service.create_user(openid)
+        g.service.create_user(openid)
         app.logger.info('register a new user, openid: %s', openid)
-    service.record_login(openid)
+    g.service.record_login(openid)
     app.logger.info('user: %s logined', openid)
 
     session['openid'] = openid
@@ -302,7 +296,7 @@ def process_pay_result():
     
     openid = result.openid
     trade_no = result.out_trade_no
-    pay = service.find_user_pay(trade_no)
+    pay = g.service.find_user_pay(trade_no)
     if pay is None:
         app.logger.error('get a pay notify but not has recorded, openid: %s, trade no: %s', openid, trade_no)
         return reply.xml()
@@ -311,16 +305,16 @@ def process_pay_result():
         app.logger.waring('user pay failed, openid: %s, trade no: %s, reason: %s', openid, trade_no, result.err_code_des)
         pay['state'] = FAIL
         pay['error_msg'] = result.err_code_des
-        service.update_user_pay(pay)
+        g.service.update_user_pay(pay)
         return reply.xml()
         
     # user pay success
     app.logger.info('user pay success, openid: %s, trade no: %s', openid, trade_no)
     pay['state'] = SUCCESS
-    service.update_user_pay(pay)
+    g.service.update_user_pay(pay)
 
     # send redpack to user
-    _send_redpack(openid, pay['id'], pay['money'])
+    _send_redpack(g.service, openid, pay['id'], pay['money'])
     return reply.xml()
 
 @app.route('/api/pay', methods=['POST'])
@@ -347,21 +341,21 @@ def receive_tax():
         app.logger.warning('communication error while make order, reason: %s', result.return_msg)
         pay_info['state'] = FAIL
         pay_info['error_msg'] = result.return_msg
-        service.save_user_pay(pay_info)
+        g.service.save_user_pay(pay_info)
         return ret_msg(FAIL, result.return_msg)
 
     if result.result_code == FAIL:
         app.logger.warning('make order to weixin failed, reason: %d:%s', result.err_code, result.err_code_des)
         pay_info['state'] = FAIL
         pay_info['error_msg'] = result.err_code_des
-        service.save_user_pay(pay_info)
+        g.service.save_user_pay(pay_info)
         return ret_msg(FAIL, "{}:{}".format(result.err_code, result.err_code_des))
 
     # save to db
     app.logger.info('user: %s make order success, wait to pay, trade_no: %s', openid, order.out_trade_no)
     pay_info['state'] = 'PREPAY'
     pay_info['prepay_id'] = result.prepay_id
-    service.save_user_pay(pay_info)
+    g.service.save_user_pay(pay_info)
 
     # get sign
     pay_sign = weixin.get_pay_sign(result.prepay_id)
@@ -375,7 +369,7 @@ def get_user_last_income():
     if openid is None:
         return redirect(weixin_oauth2_url())
 
-    rsp = service.find_user_last_income(openid)
+    rsp = g.service.find_user_last_income(openid)
     rsp = rsp or (None, None)
     ret = dict(ret=SUCCESS, msg='ok', money=rsp[0], time=rsp[1])
     if rsp[0] is None:
@@ -395,9 +389,9 @@ def get_user_account_detail_as_agent():
     pagesize = int(request.args.get('pagesize', 50))
     _offset = page * pagesize
     
-    total_bill_num = service.find_agent_bill_num(openid)
-    shared_bill_num = service.find_agent_shared_bill_num(openid)
-    bills = service.find_agent_bill(openid, _offset, pagesize)
+    total_bill_num = g.service.find_agent_bill_num(openid)
+    shared_bill_num = g.service.find_agent_shared_bill_num(openid)
+    bills = g.service.find_agent_bill(openid, _offset, pagesize)
 
     total_income = 0
     shared_income = 0
@@ -410,7 +404,7 @@ def get_user_account_detail_as_agent():
 
     ret = dict(ret=SUCCESS, msg='ok', total_bill_num=total_bill_num, shared_bill_num=shared_bill_num,
                page=page, pagesize=pagesize, total_income=total_income, shared_income=shared_income,
-               follower_num=service.find_follower_num(openid), bills=ret_bills)
+               follower_num=g.service.find_follower_num(openid), bills=ret_bills)
     return json_dumps(ret)
     
 # just for test
@@ -433,13 +427,3 @@ def test(func):
 if __name__ == '__main__':
     debug = app.config['TESTING']
     app.run('0.0.0.0', port=80, threaded=True, debug=debug)
-
-
-
-
-
-
-
-
-
-
