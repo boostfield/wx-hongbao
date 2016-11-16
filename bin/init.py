@@ -12,9 +12,20 @@ homedir = os.path.join(cdir, '..')
 sys.path.append(homedir)
 import main
 import weixin
+from common import save_file
 
-
+# 初始化数据库
+script_file = 'script.sql'
+script = "\
+create database if not exists {0};\
+create user if not exists '{1}'@'{2}' identified by '{3}';\
+grant all on {0}.* to '{1}'@'{2}';".format(
+    main.app.config['DB_SCHEMA'], main.app.config['DB_USER'], main.app.config['DB_HOST'], main.app.config['DB_PASS'])
+save_file(script_file, script)
+print("entry mysql root user password:")
+os.system('mysql -u root -p < %s' % script_file)
 main.init_db()
+
 os.system('lessc {}/static/style.less > {}/static/style.css'.format(homedir, homedir))
 
 # 获取主页短链接
