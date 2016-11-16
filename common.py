@@ -16,7 +16,6 @@ def fmt_timestamp(time, fmt):
     return datetime.fromtimestamp(time).strftime(fmt)
 
 def save_file(path, data):
-    print(data)
     with open(path, 'w') as file:
         file.write(data)
 

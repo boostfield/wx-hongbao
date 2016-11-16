@@ -1,7 +1,7 @@
 import json
 import logging
 from logging import StreamHandler, Formatter
-from random import choice, randint
+from random import choice, randint, random
 from itertools import groupby
 from datetime import datetime
 from pathlib import Path
@@ -18,10 +18,9 @@ logger = _default_logger()
 
 STRATEGY_FILES_HOME = './strategies'
 STRATEGY_FILES_SUFFIX = '.json'
-STRATEGY_REFREASH_INTERVAL = 120 # 重新加载策略的间隔时间（分钟）
+STRATEGY_REFREASH_INTERVAL = 120 * 60 # 重新加载策略的间隔时间
 TIMESTAMP_FMT = '%Y-%m-%d %H:%M:%S'
 
-count = [0, 0, 0, 0, 0, 0, 0, 0]
 CONFIG_DEFAULT_VALUE = {
     "name": 'default',
     "enable": True,
@@ -64,8 +63,8 @@ class StrategyManager:
         elif not stg.is_available():
             stg.stop()
             logger.info("current strategy: %s is no more available, it will be replaced", stg.name)
-            logger.info("strategy %s summary: start at: %s, stop at: %s, duration: %d minutes, serve %d users, total income: %d￥, total pay: %d￥, profit: %d￥",
-                        stg.name, stg.start_at(), stg.stop_at(), stg.duration(), stg.user_num, stg.total_income, stg.total_pay, stg.net_profit())
+            logger.info("strategy %s summary: start at: %s, stop at: %s, duration: %d minutes, serve %d users, total income: %d￥, total pay: %d￥, profit: %d￥, profit rate: %.2f",
+                        stg.name, stg.start_at(), stg.stop_at(), stg.duration(), stg.user_num, stg.total_income, stg.total_pay, stg.net_profit(), stg.profit_rate())
             self._current_strategy = self._find_strategy()
             self._current_strategy.start()
             logger.info("new strategy: %s started", self._current_strategy.name)
@@ -89,10 +88,11 @@ class StrategyManager:
         return [str(p) for p in path.iterdir() if p.is_file() and p.suffix == STRATEGY_FILES_SUFFIX]
             
     def _strategies_old(self):
-        return self._load_strategies_time + STRATEGY_REFREASH_INTERVAL * 60 <= now_sec()
+        return self._load_strategies_time + STRATEGY_REFREASH_INTERVAL <= now_sec()
     
     def _find_strategy(self):
         if self._strategies_old():
+            logger.info("timeout since last load strategies")
             self._load_strategies()
             
         available_strategies = [s for s in self.strategies if s.is_available()]
@@ -163,7 +163,7 @@ class Strategy:
             if 'duration' in self.config:
                 return self.start_time + self.config['duration'] * 60 > _now
         
-        if self.config['enable'] and _now > self._available_time():
+        if self.config['enable'] and _now >= self._available_time():
             return True
 
         return False
@@ -200,7 +200,7 @@ class Strategy:
         return self.total_income - self.total_pay
 
     def profit_rate(self):
-        return round(self.net_profit() / self.total_pay, 2)
+        return round(self.net_profit() / (self.total_pay + 1), 2) # 加 1 避免被 0 除
 
     ###################
     # private methods #
@@ -257,6 +257,13 @@ class Strategy:
         else: _high = max(min(int(income * high), self.config['max_redpack']), self.config['min_redpack'])
         return randint(_low, _high)
             
+    def _rand_rand_money(self, income, prob, range0, range1):
+        """ 在一定概率下选择第一个区间，否则选择另一区间 """
+        if random() < prob:
+            return self._rand_money(income, *range0)
+        else:
+            return self._rand_money(income, *range1)
+        
     def _get_filename(self, path):
         p = Path(path)
         return p.name[:-len(p.suffix)]
@@ -271,36 +278,29 @@ class Strategy:
             expect_profit = int(self.total_pay * (self.config['gain_rate'] / 100))
             exceed_profit = self.net_profit() - expect_profit
 
-            # print(self.total_pay, expect_profit, self.net_profit(), exceed_profit)
             if exceed_profit >= 0: # 已超出盈利目标, 尽最大可能让利
-                count[0] += 1
-                return self._rand_money(income, 5)
+                return self._rand_rand_money(income, 0.5, (5, ), (1, 2))
             else:
                 if must_win:    # 未达盈利目标但用户连输，仍返利
-                    count[1] += 1
                     return self._rand_money(income, 1.5, 4)
                 elif must_miss: # 
-                    count[2] += 1
                     return self._rand_money(income, 0.5, 0.8)
                 else:
-                    count[3] += 1
                     return self._rand_money(income, 0.5, 1.2)
         else:                   # 目标是让利
             total_loss = -self.net_profit()
             may_loss = self.config['loss_limit'] * 100 - total_loss
             if may_loss > 0:    # 有利可让
-                count[4] += 1
-                # todo: 一定概率下返回较大金额
-                return self._rand_money(income, 0.9, 1.3)
+                if must_win:
+                    return self._rand_rand_money(income, 0.3, (5, ), (1.5, 2))
+                else:
+                    return self._rand_rand_money(income, 0.3, (5, ), (0.9, 1.3))
             else:
                 if must_win:    # 已无利可让但用户连输，仍返利
-                    count[5] += 1
                     return self._rand_money(income, 1.5, 4)
                 elif must_miss:
-                    count[6] += 1
                     return self._rand_money(income, 0.5, 0.8)
                 else:
-                    count[7] += 1
                     return self._rand_money(income, 0.5, 0.8)
         
 class UserHistory:

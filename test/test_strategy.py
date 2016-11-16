@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import base
+import os
 import unittest
 import json
 import main
@@ -9,7 +10,7 @@ import strategy
 from strategy import Strategy
 from pathlib import Path
 from base import anything
-from common import now_sec, fmt_timestamp
+from common import now_sec, fmt_timestamp, save_file
 
 FAIL = 'FAIL'
 SUCCESS = 'SUCCESS'
@@ -23,7 +24,7 @@ class TC(unittest.TestCase):
         
     def tearDown(self):
         strategy.StrategyManager.get_manager().clean()
-        Path(strategy.STRATEGY_FILES_HOME).rmdir()
+        os.system("rm -rf %s" % strategy.STRATEGY_FILES_HOME)
         
     def test_strategy_enable(self):
         config = dict(enable=False)
@@ -123,9 +124,46 @@ class TC(unittest.TestCase):
         time.sleep(4)
         self.assertEqual('default', strategy.get_strategy().name)
         
+    def _dump_strategy(self, config):
+        save_file("strategies/%s.json" % config['name'], json.dumps(config))
+        
     def test_reload_strategy(self):
+        config = {
+            "name": 'stg0',
+            "priority": 2,
+            "disable_time": fmt_timestamp(now_sec() + 2, TIMESTAMP_FMT)
+            }
+        self._dump_strategy(config)
 
-        pass
+        config = {
+            "name": 'stg1',
+            "priority": 1,
+            "enable_time": fmt_timestamp(now_sec() + 1, TIMESTAMP_FMT),
+            "disable_time": fmt_timestamp(now_sec() + 3, TIMESTAMP_FMT)
+            }
+        self._dump_strategy(config)
+        stg = strategy.get_strategy()
+        self.assertEqual('stg0', stg.name)
+
+        config = {
+            "name": 'stg2',
+            "priority": 3
+            }
+        self._dump_strategy(config)
+
+        strategy.STRATEGY_REFREASH_INTERVAL = 3
+        stg = strategy.get_strategy()
+        self.assertEqual('stg0', stg.name)
+
+        time.sleep(2)
+        stg = strategy.get_strategy()
+        self.assertEqual('stg1', stg.name)
+
+        time.sleep(2)
+        stg = strategy.get_strategy()
+        self.assertEqual('stg2', stg.name)
+
+
     
     def test_summary(self):
         stg = strategy.Strategy({
@@ -139,18 +177,27 @@ class TC(unittest.TestCase):
             pay0 = stg.pay('user0', 1000)
             pay1 = stg.pay('user1', 1000)
             pay2 = stg.pay('user2', 1000)
-
-            print(pay0, pay1, pay2)
             total += (pay0 + pay1 + pay2)
 
-        # self.assertEqual(times * 3 * 1000, stg.total_income)
-        # self.assertEqual(total, stg.total_pay)
-        # self.assertEqual(3, stg.user_num)
+        self.assertEqual(times * 3 * 1000, stg.total_income)
+        self.assertEqual(total, stg.total_pay)
+        self.assertEqual(3, stg.user_num)
         self.assertEqual(3 * times, stg.pay_num)
-        # self.assertEqual(stg.total_income - total, stg.net_profit())
-        # print("net profit: %d" % stg.net_profit())
+        self.assertEqual(stg.total_income - total, stg.net_profit())
+        print("net profit: %d" % stg.net_profit())
         print("profit rate: %f" % stg.profit_rate())
-        print(strategy.count)
+
+    def test_rand_rand_money(self):
+        stg = Strategy(dict(min_redpack=0))
+        money = stg._rand_rand_money(100, 0, None, (0.9, 0.91))
+        self.assertIn(money, (90, 91))
+        
+        money = stg._rand_rand_money(100, 1, (0.9, 0.91), None)
+        self.assertIn(money, (90, 91))
+
+        stg = Strategy(dict(min_redpack=0, max_redpack=100))
+        money = stg._rand_rand_money(100, 1, (0.99, ), None)
+        self.assertIn(money, (99, 100))
     
 if __name__ == '__main__':
     unittest.main()

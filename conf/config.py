@@ -15,6 +15,7 @@ DB_PASS = 'boost'
 DB_HOST = 'localhost'
 DB_SCHEMA = 'wx_redpack'
 LOG_LEVEL = 'DEBUG'
+TESTING = True
 AGENT_SHARE_PERCENT = 0.05      # 代理提成点数
 REDPACK_MAX = 20000             # 红包最大金额
 REDPACK_MIN = 100             # 红包最小金额
