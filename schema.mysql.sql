@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS user;
 
 CREATE TABLE user(
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    openid TEXT NOT NULL,
+    openid CHAR(28) NOT NULL UNIQUE,
 	agent INTEGER NULL,
 	share_qrcode TEXT NULL,
     register_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -16,31 +16,33 @@ CREATE TABLE user(
 
 CREATE TABLE login(
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    openid TEXT NOT NULL,
+    openid CHAR(28) NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE user_pay(
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    openid TEXT NOT NULL,
+    openid CHAR(28) NOT NULL,
     money INT NOT NULL,
-    trade_no TEXT NOT NULL,
-    ip TEXT NOT NULL,
-    state TEXT NOT NULL,	-- FAIL/PREPAY/SUCCESS
-	prepay_id TEXT,
+    trade_no CHAR(17) NOT NULL,
+    ip VARCHAR(15) NOT NULL,
+    state VARCHAR(8) NOT NULL,	-- FAIL/PREPAY/SUCCESS
+	prepay_id CHAR(32),
     error_msg TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+CREATE INDEX idx_user_pay_openid ON user_pay(openid);
+CREATE INDEX idx_user_pay_trade_no ON user_pay(trade_no);
 
 CREATE TABLE sys_pay(
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    openid TEXT NOT NULL,
+    openid CHAR(28) NOT NULL,
 	money INT NOT NULL,
-	billno TEXT NOT NULL,
+	billno CHAR(28) NOT NULL,
 	user_pay_id INTEGER NULL,
-	state TEXT NOT NULL,
-	type TEXT NOT NULL,
-	wx_billno TEXT,
+	state VARCHAR(8) NOT NULL,
+	type VARCHAR(8) NOT NULL,
+	wx_billno CHAR(32),
 	error_msg TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	FOREIGN KEY(user_pay_id) REFERENCES user_pay(id)
@@ -58,7 +60,7 @@ CREATE TABLE share(
 
 CREATE TABLE event(
     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-    openid TEXT NOT NULL,
+    openid CHAR(28) NOT NULL,
 	type TEXT NOT NULL,
 	info TEXT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
