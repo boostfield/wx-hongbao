@@ -19,5 +19,16 @@ class TC(unittest.TestCase):
         self.assertTrue(os.path.exists(file))
         os.remove(file)
 
+    def test_weixin_encrypt(self):
+        msg = weixin.Message()
+        msg.name = 'abc'
+
+        encode = msg.encrypt()
+        print(encode.xml())
+
+        s = msg.decrypt(b'WwUvsf+IhdcB222lnlPnYLgsCDXV+mahmY4/0vcN2IexQls4XXJyafckWg4YjMrvIr+Twq8IzU0GMzJh+MMr+lNqD2VWoMaiMRIOAIzIus40AaVIetQDNjSfC8ehIPFG')
+        print(s)
+        
+
 if __name__ == '__main__':
     unittest.main()

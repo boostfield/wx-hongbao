@@ -1,9 +1,13 @@
-import xml.etree.ElementTree as ET
 import json
 import hashlib
 import urllib
+import socket
+import struct
+import base64
 from httplib import HTTP
 from common import now_sec, randstr
+from Crypto.Cipher import AES
+import xml.etree.ElementTree as ET
 
 # == 由外部赋值 ==
 logger = None       
@@ -12,6 +16,8 @@ ssl_key_file = None
 APP_ID = None
 APP_SECRET = None
 API_KEY = None
+ENCODING_AES_KEY = None
+TOKEN = None
 # ================
 
 WX_URL_GET_ACCESS_TOKEN = 'https://api.weixin.qq.com/cgi-bin/token'
@@ -34,6 +40,33 @@ _jsapi_ticket = {
         'ticket': None,
         'timestamp': 0
         }
+
+class PKCS7Encoder():
+    """提供基于PKCS7算法的加解密接口"""
+    block_size = 32
+    def encode(self, text):
+        """ 对需要加密的明文进行填充补位
+        @param text: 需要进行填充补位操作的明文
+        @return: 补齐明文字符串
+        """
+        text_length = len(text)
+        # 计算需要填充的位数
+        amount_to_pad = self.block_size - (text_length % self.block_size)
+        if amount_to_pad == 0:
+            amount_to_pad = self.block_size
+        # 获得补位所用的字符
+        pad = bytes(chr(amount_to_pad), 'utf-8')
+        return text + pad * amount_to_pad
+
+    def decode(self, decrypted):
+        """删除解密后明文的补位字符
+        @param decrypted: 解密后的明文
+        @return: 删除补位字符后的明文
+        """
+        pad = ord(decrypted[-1])
+        if pad<1 or pad >32:
+            pad = 0
+        return decrypted[:-pad]
 
 class Message:
     def _inflate(self, xml):
@@ -67,9 +100,54 @@ class Message:
         root = ET.Element('xml')
         for k, v in self.__dict__.items():
             e = ET.SubElement(root, k)
-            e.text = str(v)
+            if isinstance(v, str):
+                e.text = v
+            elif isinstance(v, bytes):
+                e.text = v.decode('utf-8')
+            else:
+                e.text = str(v)
             
         return ET.tostring(root, encoding='UTF-8')
+
+    def _encrypt(self):
+        text = self.xml()
+        text = bytes(randstr(16), 'utf-8') + struct.pack("I", socket.htonl(len(text))) + text + bytes(APP_ID, 'utf-8')
+        text = PKCS7Encoder().encode(text)
+
+        key = base64.b64decode(ENCODING_AES_KEY)
+        cryptor = AES.new(key, AES.MODE_CBC, key[:16])
+        cipher = cryptor.encrypt(text)
+        return base64.b64encode(cipher)
+
+    def _decrypt(self, text):
+        key = base64.b64decode(ENCODING_AES_KEY)
+        cryptor = AES.new(key, AES.MODE_CBC, key[:16])
+        plain_text = cryptor.decrypt(base64.b64decode(text))
+        
+        pad = plain_text[-1]
+        content = plain_text[16:-pad]
+        xml_len = socket.ntohl(struct.unpack("I", content[:4])[0])
+        xml_content = content[4:xml_len+4]
+        from_appid = content[xml_len+4:]
+        return xml_content
+
+    def _sign_msg(self, timestamp, nonce, encrypt):
+        items = [bytes(TOKEN, 'utf-8'), bytes(timestamp, 'utf-8'), bytes(nonce, 'utf-8'), encrypt]
+        items.sort()
+        return Signer.sha1_sign(b''.join(items))
+    
+    def encrypt(self):
+        msg = Message()
+        msg.TimeStamp = str(now_sec())
+        msg.Nonce = randstr()
+        msg.Encrypt = self._encrypt()
+        msg.MsgSignature = self._sign_msg(msg.TimeStamp, msg.Nonce, msg.Encrypt)
+        return msg
+
+    def decrypt(self):
+        plain_text = self._decrypt(self.Encrypt)
+        return Message(plain_text)
+        
 
 class Signer:
     @classmethod
@@ -90,7 +168,10 @@ class Signer:
     @staticmethod
     def sha1_sign(s):
         sha1 = hashlib.sha1()
-        sha1.update(s.encode('utf-8'))
+        if isinstance(s, bytes):
+            sha1.update(s)
+        else:
+            sha1.update(s.encode('utf-8'))
         return sha1.hexdigest()
 
 def _build_jsapi_sign(ticket, noncestr, timestamp, url):

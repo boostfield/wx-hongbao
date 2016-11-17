@@ -29,6 +29,8 @@ weixin.ssl_key_file = app.config['WEIXIN_SSL_KEY_FILE']
 weixin.APP_ID = app.config['APP_ID']
 weixin.APP_SECRET = app.config['APP_SECRET']
 weixin.API_KEY = app.config['API_KEY']
+weixin.ENCODING_AES_KEY = app.config['ENCODING_AES_KEY']
+weixin.TOKEN = app.config['TOKEN']
 
 SUCCESS = 'SUCCESS'
 FAIL = 'FAIL'
@@ -205,7 +207,8 @@ def auth():
 
 @app.route('/api/callback', methods=['POST'])
 def callback():
-    msg = Message(request.data)
+    msg = Message(request.data).decrypt()
+    app.logger.info(request.data)
     if msg.MsgType == 'event':
         if msg.Event == 'subscribe':
             return _handle_subscribe(g.service, msg)
@@ -214,15 +217,20 @@ def callback():
         if msg.Event == 'SCAN':
             return _handle_scan(g.service, msg)
         
+    app.logger.info(msg.xml())
     reply_msg = Message()
 
     reply_msg.ToUserName = msg.FromUserName
     reply_msg.FromUserName = msg.ToUserName
     reply_msg.CreateTime = now_sec()
-    reply_msg.MsgType = 'image'
+    reply_msg.MsgType = 'text'
     reply_msg.Content = app.config['AUTH2_SHORT_URL']
 
-    return reply_msg.xml()
+    reply = reply_msg.encrypt()
+    m = reply.decrypt()
+    app.logger.info(m.xml())
+    app.logger.info(reply.xml())
+    return reply.xml()
 
 @app.route('/api/share/qrcode')
 def get_user_share_qrcode():
