@@ -145,8 +145,11 @@ class Message:
         return msg
 
     def decrypt(self):
-        plain_text = self._decrypt(self.Encrypt)
-        return Message(plain_text)
+        if 'Encrypt' not in self.__dict__:
+            return Message(self.__dict__)
+        else:
+            plain_text = self._decrypt(self.Encrypt)
+            return Message(plain_text)
         
 
 class Signer:

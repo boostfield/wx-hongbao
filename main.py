@@ -207,8 +207,9 @@ def auth():
 
 @app.route('/api/callback', methods=['POST'])
 def callback():
-    msg = Message(request.data).decrypt()
-    app.logger.info(request.data)
+    msg = Message(request.data)
+    if app.config['TESTING']: msg = msg.decrypt()
+
     if msg.MsgType == 'event':
         if msg.Event == 'subscribe':
             return _handle_subscribe(g.service, msg)
@@ -217,19 +218,14 @@ def callback():
         if msg.Event == 'SCAN':
             return _handle_scan(g.service, msg)
         
-    app.logger.info(msg.xml())
-    reply_msg = Message()
+    reply = Message()
+    reply.ToUserName = msg.FromUserName
+    reply.FromUserName = msg.ToUserName
+    reply.CreateTime = now_sec()
+    reply.MsgType = 'text'
+    reply.Content = app.config['AUTH2_SHORT_URL']
 
-    reply_msg.ToUserName = msg.FromUserName
-    reply_msg.FromUserName = msg.ToUserName
-    reply_msg.CreateTime = now_sec()
-    reply_msg.MsgType = 'text'
-    reply_msg.Content = app.config['AUTH2_SHORT_URL']
-
-    reply = reply_msg.encrypt()
-    m = reply.decrypt()
-    app.logger.info(m.xml())
-    app.logger.info(reply.xml())
+    if not app.config['TESTING']: reply = reply_msg.encrypt()
     return reply.xml()
 
 @app.route('/api/share/qrcode')

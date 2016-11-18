@@ -7,13 +7,14 @@ homedir = os.path.join(cdir, '..')
 sys.path.append(homedir)
 import main
 from main import app
-import service
+from service import Service
 import weixin
 from weixin import Message
 from itertools import groupby
 
 SUCCESS = 'SUCCESS'
 FAIL = 'FAIL'
+service = None
 
 def _init_redpack():
     red = Message()
@@ -36,10 +37,10 @@ def _share(agent_openid, fee, user_pay_id):
     redpack.sign()
 
     result = weixin.send_redpack(redpack)
-    result = Message(result)
 
     sys_pay = dict(openid=agent_openid, money=fee, billno=redpack.mch_billno, state='SENDED', type='SHARE')
     service.save_sys_pay(sys_pay)
+    sys_pay = service.find_sys_pay(sys_pay['billno'])
 
     if result.return_code == FAIL:
         app.logger.error('communication error while send redpack to user: %s, billno: %s, reason: %s',
@@ -47,7 +48,7 @@ def _share(agent_openid, fee, user_pay_id):
         sys_pay['state'] = FAIL
         sys_pay['error_msg'] = result.return_msg
         service.update_sys_pay(sys_pay)
-        return
+        return sys_pay
 
     if result.result_code == FAIL:
         app.logger.error('send redpack to user: %s failed, billno: %s, reason: %s-%s',
@@ -55,14 +56,14 @@ def _share(agent_openid, fee, user_pay_id):
         sys_pay['state'] = FAIL
         sys_pay['error_msg'] = '{}-{}'.format(result.err_code, result.err_code_des)
         service.update_sys_pay(sys_pay)
-        return
+        return sys_pay
 
     app.logger.info('send redpack to user: %s success, billno: %s', openid, redpack.mch_billno)
 
     sys_pay['state'] = SUCCESS
     sys_pay['wx_billno'] = result.send_listid
     service.update_sys_pay(sys_pay)
-    return service.find_sys_pay(sys_pay['billno'])
+    return sys_pay
 
 def save_shares(profits, sys_pay_id):
     for p in profits:
@@ -71,12 +72,15 @@ def save_shares(profits, sys_pay_id):
 # 处理一个 agent 的分红
 def settlement(agent, profits):
     fee = 0
+    total = 0
     profits_in_one_share = []
     for p in profits:
-        share = _shared_money(p['money'])
+        share = main.shared_money(p['money'])
         if fee + share > app.config['REDPACK_MAX']:
             sys_pay = _share(p['agent_openid'], fee, p['user_pay_id'])
-            save_shares(profits_in_one_share, sys_pay['id'])
+            if sys_pay['state'] == SUCCESS:
+                save_shares(profits_in_one_share, sys_pay['id'])
+                total += fee
             profits_in_one_share = []
             fee = 0
         fee += share
@@ -84,11 +88,16 @@ def settlement(agent, profits):
 
     if fee > app.config['REDPACK_MIN']:
         sys_pay = _share(p['agent_openid'], fee, p['user_pay_id'])
-        save_shares(profits_in_one_share, sys_pay['id'])
+        if sys_pay['state'] == SUCCESS:
+            save_shares(profits_in_one_share, sys_pay['id'])
+            total += fee
+    app.logger.info('share %d points to user: %d', total, agent)
         
 
 if __name__ == '__main__':
-    service.db = main.connect_db()
+    app.logger.info('share profilt run')
+
+    service = Service(main.connect_db())
     weixin.ssl_cert_file = './apiclient_cert.pem'
     weixin.ssl_key_file = './apiclient_key.pem'
     profit = service.find_unshared_profit()
