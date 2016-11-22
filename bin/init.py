@@ -46,12 +46,19 @@ if os.system("wget '{}' -O qrcode.png".format(qrcode_url)) != 0:
 # 生成分享二维码
 from PIL import Image
 qr = Image.open('qrcode.png')
-bg = Image.open('../static/images/img_share.png')
-bg.paste(qr, (225, 360, 525, 660))
+bg = Image.open('../static/images/img_share_picture.png')
+qr = qr.convert('RGB')
+bg = bg.convert('RGB')
+qr_w, qr_h = qr.size
+bg_w, bg_h = bg.size
+qr_x = (bg_w - qr_w) // 2
+qr_y = bg_h // 3
+bg.paste(qr, (qr_x, qr_y, qr_x + qr_w, qr_y + qr_h))
+bg = bg.convert('P')
 bg.save('../static/images/entry_qrcode.png')
 os.system('rm qrcode.png')
 print('get app entry qrcode from: http://test.boostfield.com/images/entry_qrcode.png')
-        
+
 # 定时为代理分红
 cmd = "echo '0 10 * * * {}/share_profit.py' | crontab -".format(homedir)
 print('install crontab task to system:')
