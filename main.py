@@ -6,7 +6,7 @@ import pymysql
 from service import Service
 from datetime import datetime
 from logging import Formatter, FileHandler
-from common import randstr, now_sec, json_dumps
+from common import randstr, now_sec, json_dumps, make_qrcode
 from flask import Flask, request, redirect, session, g, abort
 
 app = Flask(__name__, static_url_path='')
@@ -53,7 +53,21 @@ def create_menu():
             'type': 'view',
             'name': '开始游戏',
             'url': app.config['AUTH2_SHORT_URL']
-        }]}
+           },
+           
+            {
+             'type': 'view',
+             'name': '优惠淘',
+             'url' : app.config['DISCOUNT_URL']
+             },
+            {
+             'type': 'view',
+             'name': '聚淘',
+             'url' : app.config['DISCOUNT_URL']
+             }
+           ]
+        
+        }
     rsp = weixin.create_menu(menu)
     app.logger.info('create menu return: %s', rsp['errmsg'])
 
@@ -238,13 +252,11 @@ def get_user_share_qrcode():
     rsp = dict(ret=SUCCESS, msg='ok')
     if not user['share_qrcode']:
         qr_file = randstr()
-        ticket = weixin.get_unlimit_qrcode_ticket(user['id'])
-        if weixin.dump_qrcode(ticket, app.config['QRCODE_HOME'] + '/' + qr_file):
-            user['share_qrcode'] = qr_file
-            g.service.update_user(user)
-        else:
-            rsp = dict(ret=FAIL, msg='download qrcode failed')
-            return json_dumps(rsp)
+        auth_url = weixin.oauth2_url(app.config['RESTFUL_ROOT'] + '/auth/redirect', user['id'])
+        short_url = weixin.url_to_short(auth_url)
+        make_qrcode(short_url['short_url'], '%s/%s.png' % (app.config['QRCODE_HOME'], qr_file))
+        user['share_qrcode'] = qr_file + '.png'
+        g.service.update_user(user)
             
     rsp['qrcode'] = user['share_qrcode']
     app.logger.debug("user: %s, get qrcode return: %s", openid, rsp)
@@ -261,11 +273,22 @@ def auth_redirect():
             return redirect(weixin_oauth2_url())
         openid = access_token['openid']
 
+    agent = request.args.get('state')
+    if agent:
+        if agent.isdecimal(): agent = int(agent)
+        else:
+            app.logger.warning("get a wrong agent argument from: %s, agent: %s", request.environ['REMOTE_ADDR'], agent)
+            agent = 0
+
     # 记录用户登录信息
     user = g.service.find_user(openid)
     if user is None:
-        g.service.create_user(openid)
-        app.logger.info('register a new user, openid: %s', openid)
+        if agent:
+            g.service.create_user(openid, agent)
+            app.logger.info('register a new user, openid: %s follow by: %d', openid, agent)
+        else:
+            g.service.create_user(openid)
+            app.logger.info('register a new user, openid: %s', openid)
     g.service.record_login(openid)
     app.logger.info('user: %s logined', openid)
 

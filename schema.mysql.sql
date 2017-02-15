@@ -27,7 +27,7 @@ CREATE TABLE user_pay(
     trade_no CHAR(17) NOT NULL,
     ip VARCHAR(15) NOT NULL,
     state VARCHAR(8) NOT NULL,	-- FAIL/PREPAY/SUCCESS
-	prepay_id CHAR(32),
+	prepay_id CHAR(36),
     error_msg TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

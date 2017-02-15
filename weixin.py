@@ -218,13 +218,13 @@ def get_pay_sign(prepay_id):
     sign_items['paySign'] = Signer.signstr(sign_items)
     return sign_items
 
-def oauth2_url(redirect_uri):
+def oauth2_url(redirect_uri, state=0):
     params = (
             ('appid', APP_ID),
             ('redirect_uri', redirect_uri),
             ('response_type', 'code'),
             ('scope', 'snsapi_base'),
-            ('state', 'STATE')
+            ('state', state)
             )
     return '{}?{}#wechat_redirect'.format(WX_URL_OAUTH2, HTTP.urlencode(params))
 

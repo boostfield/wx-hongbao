@@ -124,7 +124,7 @@ class Service:
 
     def find_unshared_profit(self, ):
         with self.db.cursor() as c:
-            c.execute("SELECT u.openid, u.agent, a.openid, p.money, p.id FROM user AS u JOIN user_pay AS p ON u.openid=p.openid JOIN user AS a ON u.agent=a.id WHERE p.state='SUCCESS' AND NOT EXISTS (SELECT * FROM share WHERE user_pay_id=p.id) ORDER BY u.agent")
+            c.execute("SELECT u.openid, u.agent, a.openid, p.money, p.id FROM user AS u JOIN user_pay AS p ON u.openid=p.openid JOIN user AS a ON u.agent=a.id WHERE p.state='SUCCESS' AND NOT EXISTS (SELECT * FROM share WHERE user_pay_id=p.id) ORDER BY u.agent, p.id")
             keys = ('openid', 'agent', 'agent_openid', 'money', 'user_pay_id')
             return list(map(lambda row: dict(zip(keys, row)), c.fetchall()))
 

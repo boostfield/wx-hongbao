@@ -2,6 +2,7 @@ import time
 from datetime import date, datetime
 import json
 import uuid
+import qrcode
 
 def now():
     return time.time()
@@ -29,3 +30,17 @@ class ExternJsonEncoder(json.JSONEncoder):
     
 def json_dumps(obj):
     return json.dumps(obj, cls=ExternJsonEncoder)
+
+
+def make_qrcode(info, path):
+    """ 生成二维码并保存到指定的路径 """
+    qr = qrcode.main.QRCode(
+        version=3,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        border=1
+    )
+    qr.add_data(info)
+    qr.make()
+    img = qr.make_image()
+    img.save(path)
+

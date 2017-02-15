@@ -164,6 +164,8 @@ class TC(unittest.TestCase):
         rsp = json.loads(rsp.data.decode('utf-8'))
         self.assertEqual(SUCCESS, rsp['ret'])
         self.assertIn('qrcode', rsp)
+        
+        print(rsp)
 
     def test_find_unshared_profit(self):
         self.service.create_user(OPENID)
