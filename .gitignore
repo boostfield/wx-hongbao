@@ -1,10 +1,12 @@
 *.pyc
+*~
 *.db
 *.pem
 log/
 test.py
 static/images/entry_qrcode.png
 static/qrcode
+static/qrcode/*
 MP_verify_O6UrgEPBKJpwBg64.txt
 .idea/workspace.xml
 .idea/.name

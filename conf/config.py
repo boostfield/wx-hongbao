@@ -26,4 +26,4 @@ LOG_FORMAT = '[%(levelname)s] %(asctime)s [%(process)d:%(thread)d] [%(funcName)s
 SECRET_KEY = '4c7b0db408b0c1b4242337ade30120f1'
 WEIXIN_SSL_CERT_FILE = '/var/www/wx-test/apiclient_cert.pem'
 WEIXIN_SSL_KEY_FILE = '/var/www/wx-test/apiclient_key.pem'
-AUTH2_SHORT_URL = "http://w.url.cn/s/Aa5QzRQ"
+AUTH2_SHORT_URL = "http://w.url.cn/s/Akj2nNA"
